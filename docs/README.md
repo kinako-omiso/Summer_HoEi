@@ -118,7 +118,7 @@ main ── develop
     ```
     git branch
     ```
-    *がついているものが今いるブランチ。もしくはVSCodeの左下、![ここ](image.png)<br>
+    *がついているものが今いるブランチ。もしくはVSCodeの左下、<br>![alt text](READMEimages/look_branch.png)<br>
     をみると確認できる。
 7. 作業最高！作業最高！
 8. 一段落したらステージングする。ステージングとはgit上にコミットするデータを教える(選択する)こと。セーブするデータを選ぶ感じ。<br>
