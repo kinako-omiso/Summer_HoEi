@@ -68,6 +68,8 @@ main ── develop
 ```
 とか書くといいんじゃないでしょうか。
 
+> **注意** 作業途中でやめる場合、githubのそのissueページに自分がやった内容とまだできてない内容をコメントとして書くと親切です。
+
 ### それぞれのコマンド
 - コミットするコマンドはステージング(後述)している状態で
     ```
@@ -148,8 +150,15 @@ main ── develop
  > **注意:**
  ここから下はそのissueの作業が完了した場合のみ行ってください。
 
-11. 作業を完了したこと、プッシュしたことを確認しプルリクエストを作成する。githubのページを開き、Pull Requestをクリック<br>
-![alt text](<スクリーンショット 2026-08-14 233934.png>)
-Merge先をmianからdevelopブランチに変更し、コメントにissue番号のみを記入(#[issue番号])し作成。<br>
-なんかやばそうな画面(赤とか)が表示されなければそのままMergeする。表示された場合はきなこのお味噌汁へ。
+11. 作業を完了したこと、プッシュしたことを確認しプルリクエストを作成する。githubのページを開き、Compare Pull Requestをクリック<br>
+![alt text](READMEimages/GithubLookPullRequest.png)
+![!\[a\](MakePullRequest.png)](READMEimages/MakePullRequest.png)<br>
+Merge先をmianからdevelopブランチに変更し、Milestoneをそのissueのものに設定、コメントにissue番号のみを記入(#[issue番号])し作成(Create Pull Requestをクリック)。<br>
+![alt text](<READMEimages/スクリーンショット 2026-08-14 235910.png>)
+
+なんかやばそうな画面(赤とか)が表示されなければそのままMergeする(Confirm Merge)。表示された場合はきなこのお味噌汁へ。
+![!\[a\](image/image.png)](<READMEimages/スクリーンショット 2026-08-15 000225.png>)
+![alt text](<READMEimages/スクリーンショット 2026-08-15 000238.png>)
+
+12. Mergeが完了したらgithubのissue画面を開き、Mergeが完了したためCloseします等のコメントを残してCloseする。
 
