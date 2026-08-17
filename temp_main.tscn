@@ -1,0 +1,19 @@
+[gd_scene format=3 uid="uid://fq3k3jygpu0k"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_k8684"]
+size = Vector3(10, 1, 10)
+
+[sub_resource type="BoxMesh" id="BoxMesh_k8684"]
+size = Vector3(10, 1, 10)
+
+[node name="TempMain" type="Node" unique_id=1148120628]
+
+[node name="TempGround" type="StaticBody3D" parent="." unique_id=642325475]
+collision_layer = 4
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="TempGround" unique_id=1825516022]
+shape = SubResource("BoxShape3D_k8684")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="TempGround" unique_id=2074212072]
+mesh = SubResource("BoxMesh_k8684")
