@@ -1,0 +1,9 @@
+[gd_scene format=3 uid="uid://c4y6xxtcor5q3"]
+
+[ext_resource type="PackedScene" uid="uid://cii33ym88rfo5" path="res://Playerは円柱形.glb" id="1_4flbx"]
+
+[node name="Player" type="CharacterBody3D" unique_id=943185070]
+
+[node name="pivod" type="Node3D" parent="." unique_id=270018981]
+
+[node name="Playerは円柱形" parent="pivod" unique_id=705240815 instance=ExtResource("1_4flbx")]
