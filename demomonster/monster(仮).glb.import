@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://biuu6iv3kx5l3"
-path="res://.godot/imported/monster(仮).glb-3f029072a75182bc1fc8a7b1e1632f5d.scn"
+path="res://.godot/imported/monster(仮).glb-62d892b74d9d97acf12f08963e393f91.scn"
 
 [deps]
 
-source_file="res://monster(仮).glb"
-dest_files=["res://.godot/imported/monster(仮).glb-3f029072a75182bc1fc8a7b1e1632f5d.scn"]
+source_file="res://demomonster/monster(仮).glb"
+dest_files=["res://.godot/imported/monster(仮).glb-62d892b74d9d97acf12f08963e393f91.scn"]
 
 [params]
 
