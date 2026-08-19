@@ -2,29 +2,33 @@
 
 [ext_resource type="Script" uid="uid://blpw28rvfygfm" path="res://temp_main.gd" id="1_27twd"]
 [ext_resource type="PackedScene" uid="uid://c4y6xxtcor5q3" path="res://player.tscn" id="1_xmdk1"]
-
-[sub_resource type="BoxShape3D" id="BoxShape3D_k8684"]
-size = Vector3(10, 1, 10)
-
-[sub_resource type="BoxMesh" id="BoxMesh_k8684"]
-size = Vector3(10, 1, 10)
+[ext_resource type="PackedScene" path="res://assets/3DModel/floor_square.tscn" id="3_floor"]
+[ext_resource type="PackedScene" path="res://assets/3DModel/wall_no_door.tscn" id="4_wall"]
+[ext_resource type="PackedScene" path="res://assets/3DModel/wall_with_door.tscn" id="5_door_wall"]
+[ext_resource type="PackedScene" path="res://assets/3DModel/desk_setup.tscn" id="6_desk_setup"]
 
 [node name="TempMain" type="Node" unique_id=1148120628]
 script = ExtResource("1_27twd")
 
-[node name="TempGround" type="StaticBody3D" parent="." unique_id=642325475]
-collision_layer = 4
-collision_mask = 0
+[node name="Floor" parent="." unique_id=889951877 instance=ExtResource("3_floor")]
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="TempGround" unique_id=1825516022]
-shape = SubResource("BoxShape3D_k8684")
+[node name="WallNorth" parent="." unique_id=993036278 instance=ExtResource("4_wall")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.15, -6.87)
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="TempGround" unique_id=2074212072]
-layers = 4
-mesh = SubResource("BoxMesh_k8684")
+[node name="WallEast" parent="." unique_id=1673954300 instance=ExtResource("4_wall")]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, 6.87, 3.15, 0)
+
+[node name="WallWest" parent="." unique_id=273987384 instance=ExtResource("4_wall")]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -6.87, 3.15, 0)
+
+[node name="WallSouthWithDoor" parent="." unique_id=316227719 instance=ExtResource("5_door_wall")]
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 0, 3.15, 6.87)
+
+[node name="DeskSetup" parent="." instance=ExtResource("6_desk_setup")]
+position = Vector3(0, 0.15, -5.7)
 
 [node name="AreaLight3D" type="AreaLight3D" parent="." unique_id=1713571431]
-transform = Transform3D(1, 0, 0, 0, 5.9604645e-08, 1, 0, -1, 5.9604645e-08, 0, 8, 0)
+transform = Transform3D(1, 0, 0, 0, 5.9604645e-08, 1, 0, -1, 5.9604645e-08, 0, 6.5487566, 0)
 layers = 4
 area_range = 12.0
 
