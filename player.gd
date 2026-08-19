@@ -1,6 +1,9 @@
 extends CharacterBody3D
 # テンプレートを使用している、新たに付け足した部分は別途コメントを残しているはず
 
+# mainへの敵につかまった判定のシグナル
+signal hit
+
 @export var SPEED = 5.0
 const JUMP_VELOCITY = 4.5
 
@@ -34,3 +37,12 @@ func _physics_process(delta: float) -> void:
 		velocity.z = move_toward(velocity.z, 0, SPEED)
 
 	move_and_slide()
+
+# シグナル発信とプレイヤーの破棄
+func die():
+	hit.emit()
+	queue_free()
+
+# 敵とのあたり判定
+func _on_area_3d_body_entered(body: Node3D) -> void:
+	die()
