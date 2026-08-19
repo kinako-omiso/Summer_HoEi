@@ -1,0 +1,36 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="PackedScene" path="res://assets/3DModel/wall_with_door.glb" id="1_model"]
+[ext_resource type="Script" path="res://world_surface.gd" id="2_script"]
+[ext_resource type="PackedScene" path="res://assets/3DModel/door_interactive.tscn" id="3_door"]
+
+[sub_resource type="BoxShape3D" id="BoxShape_left"]
+size = Vector3(0.78, 6, 0.26)
+
+[sub_resource type="BoxShape3D" id="BoxShape_right"]
+size = Vector3(11.02, 6, 0.26)
+
+[sub_resource type="BoxShape3D" id="BoxShape_header"]
+size = Vector3(2.2, 2, 0.26)
+
+[node name="WallWithDoor" type="StaticBody3D"]
+collision_layer = 4
+collision_mask = 0
+script = ExtResource("2_script")
+
+[node name="Model" parent="." instance=ExtResource("1_model")]
+
+[node name="Door" parent="." instance=ExtResource("3_door")]
+position = Vector3(-6.12, -1, 0)
+
+[node name="CollisionLeft" type="CollisionShape3D" parent="."]
+position = Vector3(-6.61, 0, 0)
+shape = SubResource("BoxShape_left")
+
+[node name="CollisionRight" type="CollisionShape3D" parent="."]
+position = Vector3(1.49, 0, 0)
+shape = SubResource("BoxShape_right")
+
+[node name="CollisionHeader" type="CollisionShape3D" parent="."]
+position = Vector3(-5.12, 2, 0)
+shape = SubResource("BoxShape_header")
