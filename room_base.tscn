@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://o1yl5ad631dv"]
+
+[ext_resource type="Script" uid="uid://dwgj6pwfhguwf" path="res://room_base.gd" id="1_k3jq5"]
+
+[node name="RoomBase" type="Node3D" unique_id=2069712054]
+script = ExtResource("1_k3jq5")
