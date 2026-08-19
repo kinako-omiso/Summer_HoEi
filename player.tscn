@@ -1,0 +1,21 @@
+[gd_scene format=3 uid="uid://c4y6xxtcor5q3"]
+
+[ext_resource type="PackedScene" uid="uid://cii33ym88rfo5" path="res://Playerは円柱形.glb" id="1_4flbx"]
+[ext_resource type="Script" uid="uid://cfpvv2b0jwlrl" path="res://player.gd" id="1_onrkg"]
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_k8684"]
+
+[node name="Player" type="CharacterBody3D" unique_id=943185070]
+collision_mask = 4
+script = ExtResource("1_onrkg")
+
+[node name="pivod" type="Node3D" parent="." unique_id=270018981]
+
+[node name="Playerは円柱形" parent="pivod" unique_id=705240815 instance=ExtResource("1_4flbx")]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1208088471]
+shape = SubResource("CylinderShape3D_k8684")
+
+[node name="PlayerCamera" type="Camera3D" parent="." unique_id=2018367314]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.7, -0.499)
+cull_mask = 1048574

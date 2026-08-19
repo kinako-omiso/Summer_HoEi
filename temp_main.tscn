@@ -1,0 +1,35 @@
+[gd_scene format=3 uid="uid://fq3k3jygpu0k"]
+
+[ext_resource type="Script" uid="uid://blpw28rvfygfm" path="res://temp_main.gd" id="1_27twd"]
+[ext_resource type="PackedScene" uid="uid://c4y6xxtcor5q3" path="res://player.tscn" id="1_xmdk1"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_k8684"]
+size = Vector3(10, 1, 10)
+
+[sub_resource type="BoxMesh" id="BoxMesh_k8684"]
+size = Vector3(10, 1, 10)
+
+[node name="TempMain" type="Node" unique_id=1148120628]
+script = ExtResource("1_27twd")
+
+[node name="TempGround" type="StaticBody3D" parent="." unique_id=642325475]
+collision_layer = 4
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="TempGround" unique_id=1825516022]
+shape = SubResource("BoxShape3D_k8684")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="TempGround" unique_id=2074212072]
+layers = 4
+mesh = SubResource("BoxMesh_k8684")
+
+[node name="AreaLight3D" type="AreaLight3D" parent="." unique_id=1713571431]
+transform = Transform3D(1, 0, 0, 0, 5.9604645e-08, 1, 0, -1, 5.9604645e-08, 0, 8, 0)
+layers = 4
+area_range = 12.0
+
+[node name="MainCamera" type="Camera3D" parent="." unique_id=698277762]
+transform = Transform3D(1, 0, 0, 0, 0.5, 0.86602545, 0, -0.86602545, 0.5, 0, 9, 9)
+
+[node name="Player" parent="." unique_id=943185070 instance=ExtResource("1_xmdk1")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
