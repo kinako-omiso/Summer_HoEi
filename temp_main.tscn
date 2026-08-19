@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" path="res://assets/3DModel/wall_no_door.tscn" id="4_wall"]
 [ext_resource type="PackedScene" path="res://assets/3DModel/wall_with_door.tscn" id="5_door_wall"]
 [ext_resource type="PackedScene" path="res://assets/3DModel/desk_setup.tscn" id="6_desk_setup"]
+[ext_resource type="PackedScene" path="res://assets/3DModel/ceiling_square.tscn" id="7_ceiling"]
 
 [node name="TempMain" type="Node" unique_id=1148120628]
 script = ExtResource("1_27twd")
@@ -27,8 +28,11 @@ transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 0, 3
 [node name="DeskSetup" parent="." instance=ExtResource("6_desk_setup")]
 position = Vector3(0, 0.15, -5.7)
 
+[node name="Ceiling" parent="." instance=ExtResource("7_ceiling")]
+position = Vector3(0, 6.3, 0)
+
 [node name="AreaLight3D" type="AreaLight3D" parent="." unique_id=1713571431]
-transform = Transform3D(1, 0, 0, 0, 5.9604645e-08, 1, 0, -1, 5.9604645e-08, 0, 6.5487566, 0)
+transform = Transform3D(1, 0, 0, 0, 5.9604645e-08, 1, 0, -1, 5.9604645e-08, 0, 5.8, 0)
 layers = 4
 area_range = 12.0
 
