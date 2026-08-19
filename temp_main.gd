@@ -23,3 +23,7 @@ func _process(delta: float) -> void:
 	elif camera_change == 1 and Input.is_action_just_pressed("debug_camera_change"):
 		$MainCamera.make_current()
 		camera_change = -1
+
+# 仮死亡表示
+func _on_player_hit() -> void:
+	print("you die")
