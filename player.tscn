@@ -5,6 +5,9 @@
 
 [sub_resource type="CylinderShape3D" id="CylinderShape3D_k8684"]
 
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_mrimj"]
+radius = 0.68310547
+
 [node name="Player" type="CharacterBody3D" unique_id=943185070]
 collision_mask = 4
 script = ExtResource("1_onrkg")
@@ -19,3 +22,14 @@ shape = SubResource("CylinderShape3D_k8684")
 [node name="PlayerCamera" type="Camera3D" parent="." unique_id=2018367314]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.7, -0.499)
 cull_mask = 1048574
+
+[node name="Area3D" type="Area3D" parent="." unique_id=1007189964]
+collision_layer = 0
+collision_mask = 2
+monitorable = false
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Area3D" unique_id=1434938827]
+shape = SubResource("CylinderShape3D_mrimj")
+debug_color = Color(0.578948, 0.5525206, 0.029899785, 0.41960785)
+
+[connection signal="body_entered" from="Area3D" to="." method="_on_area_3d_body_entered"]

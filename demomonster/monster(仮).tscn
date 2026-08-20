@@ -1,0 +1,8 @@
+[gd_scene format=3 uid="uid://d2f0u1d5guo8o"]
+
+[ext_resource type="PackedScene" uid="uid://biuu6iv3kx5l3" path="res://demomonster/monster(仮).glb" id="1_6g8e8"]
+
+[node name="monster(仮)" unique_id=284918076 instance=ExtResource("1_6g8e8")]
+
+[node name="円柱" parent="." index="0" unique_id=846045016]
+layers = 2
