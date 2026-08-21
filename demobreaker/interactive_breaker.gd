@@ -1,5 +1,8 @@
 extends Node3D
 
+signal breaker_off
+
+
 @export var open_angle_degrees: float = -120.0
 @export var animation_duration: float = 0.45
 
@@ -40,6 +43,7 @@ func _toggle_lever() -> void:
 	tween.tween_property(self, "rotation:x", target_angle, animation_duration)
 	await tween.finished
 	_is_moving = false
+	breaker_off.emit()
 
 
 func _set_render_layers(node: Node) -> void:
