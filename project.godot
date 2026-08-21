@@ -20,6 +20,11 @@ config/icon="res://icon.svg"
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 
+[global_group]
+
+lights="ブレイカーで消灯するライト"
+player_lights="消灯後点灯"
+
 [input]
 
 move_left={
