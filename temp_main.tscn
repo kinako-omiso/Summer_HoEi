@@ -11,7 +11,6 @@
 [ext_resource type="PackedScene" uid="uid://dtwqe00ewj4d" path="res://demobreaker/breaker.tscn" id="9_qls1m"]
 
 [sub_resource type="Environment" id="Environment_k8684"]
-background_energy_multiplier = 0.0
 ambient_light_energy = 0.0
 
 [node name="TempMain" type="Node" unique_id=1148120628]
