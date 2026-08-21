@@ -27,3 +27,7 @@ func _process(delta: float) -> void:
 # 仮死亡表示
 func _on_player_hit() -> void:
 	print("you die")
+
+# 消灯システム
+func _on_breaker_lights_out() -> void:
+	get_tree().set_group("lights", "light_energy", 0.0)
