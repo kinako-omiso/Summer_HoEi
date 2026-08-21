@@ -31,3 +31,4 @@ func _on_player_hit() -> void:
 # 消灯システム
 func _on_breaker_lights_out() -> void:
 	get_tree().set_group("lights", "light_energy", 0.0)
+	get_tree().set_group("player_lights", "light_energy", 1.0)
