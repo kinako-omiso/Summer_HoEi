@@ -1,8 +1,10 @@
 [gd_scene format=3 uid="uid://dqwbx620higo1"]
 
-[ext_resource type="PackedScene" uid="uid://d2f0u1d5guo8o" path="res://demomonster/monster(仮).tscn" id="1_wddve"]
+[ext_resource type="PackedScene" uid="uid://ddvxy4axtx7d6" path="res://assets/3DModel/robot.tscn" id="1_wddve"]
 
 [sub_resource type="CylinderShape3D" id="CylinderShape3D_k8684"]
+height = 2.8847656
+radius = 0.83984375
 
 [node name="demomonster" type="CharacterBody3D" unique_id=1203470103]
 collision_layer = 2
@@ -10,7 +12,8 @@ collision_mask = 5
 
 [node name="pivod" type="Node3D" parent="." unique_id=213938137]
 
-[node name="monster(仮)" parent="pivod" unique_id=284918076 instance=ExtResource("1_wddve")]
+[node name="robot" parent="pivod" unique_id=1486726242 instance=ExtResource("1_wddve")]
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=225296992]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4423828, 0)
 shape = SubResource("CylinderShape3D_k8684")

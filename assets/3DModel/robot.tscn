@@ -1,0 +1,7 @@
+[gd_scene format=3 uid="uid://ddvxy4axtx7d6"]
+
+[ext_resource type="PackedScene" uid="uid://degovmf8y1qwd" path="res://assets/3DModel/robot.glb" id="1_voelu"]
+[ext_resource type="Script" uid="uid://b4d42v7jdypiw" path="res://robot.gd" id="2_daanq"]
+
+[node name="robot" unique_id=1486726242 instance=ExtResource("1_voelu")]
+script = ExtResource("2_daanq")

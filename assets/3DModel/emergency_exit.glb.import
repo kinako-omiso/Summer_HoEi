@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://biuu6iv3kx5l3"
-path="res://.godot/imported/monster(仮).glb-62d892b74d9d97acf12f08963e393f91.scn"
+uid="uid://klaayul3hl22"
+path="res://.godot/imported/emergency_exit.glb-d7041a75d11ee8b2852c1a0d7725aa42.scn"
 
 [deps]
 
-source_file="res://demomonster/monster(仮).glb"
-dest_files=["res://.godot/imported/monster(仮).glb-62d892b74d9d97acf12f08963e393f91.scn"]
+source_file="res://assets/3DModel/emergency_exit.glb"
+dest_files=["res://.godot/imported/emergency_exit.glb-d7041a75d11ee8b2852c1a0d7725aa42.scn"]
 
 [params]
 
