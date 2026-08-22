@@ -2,11 +2,12 @@
 
 [ext_resource type="Script" uid="uid://blpw28rvfygfm" path="res://temp_main.gd" id="1_27twd"]
 [ext_resource type="PackedScene" uid="uid://c4y6xxtcor5q3" path="res://player.tscn" id="1_xmdk1"]
-[ext_resource type="PackedScene" path="res://assets/3DModel/floor_square.tscn" id="3_floor"]
+[ext_resource type="PackedScene" uid="uid://c5nhxy31s2txk" path="res://assets/3DModel/floor_square.tscn" id="3_floor"]
 [ext_resource type="PackedScene" path="res://assets/3DModel/wall_no_door.tscn" id="4_wall"]
 [ext_resource type="PackedScene" path="res://assets/3DModel/wall_with_door.tscn" id="5_door_wall"]
 [ext_resource type="PackedScene" uid="uid://bh6bd0gjgyixf" path="res://assets/3DModel/desk_setup.tscn" id="6_desk_setup"]
 [ext_resource type="PackedScene" path="res://assets/3DModel/ceiling_square.tscn" id="7_ceiling"]
+[ext_resource type="PackedScene" uid="uid://bltrc0av4iehj" path="res://assets/3DModel/fluorescent_light.tscn" id="7_ugjol"]
 [ext_resource type="PackedScene" uid="uid://dqwbx620higo1" path="res://demomonster/demomonster.tscn" id="8_rvlho"]
 [ext_resource type="PackedScene" uid="uid://dtwqe00ewj4d" path="res://demobreaker/breaker.tscn" id="9_qls1m"]
 [ext_resource type="PackedScene" uid="uid://cm1jwh0mcnaon" path="res://assets/3DModel/ceiling_square_with_light.tscn" id="10_qy14a"]
@@ -40,11 +41,8 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.15, -5.7)
 [node name="Ceiling" parent="." unique_id=228665491 instance=ExtResource("7_ceiling")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.3, 0)
 
-[node name="AreaLight3D" type="AreaLight3D" parent="." unique_id=1713571431 groups=["lights"]]
-transform = Transform3D(1, 0, 0, 0, 5.9604645e-08, 1, 0, -1, 5.9604645e-08, 0, 6.1372595, 0)
-layers = 4
-light_energy = 2.0
-area_range = 18.0
+[node name="FluorescentLight" parent="." unique_id=554087022 instance=ExtResource("7_ugjol")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.8, 0)
 
 [node name="MainCamera" type="Camera3D" parent="." unique_id=698277762]
 transform = Transform3D(1, 0, 0, 0, 0.5, 0.86602545, 0, -0.86602545, 0.5, 0, 9, 9)

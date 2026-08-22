@@ -1,0 +1,24 @@
+[gd_scene format=3 uid="uid://bltrc0av4iehj"]
+
+[ext_resource type="Script" uid="uid://bafdgvvgwfh61" path="res://world_surface.gd" id="1_b0hpt"]
+[ext_resource type="PackedScene" uid="uid://bl7vdv7n8vl3x" path="res://assets/3DModel/fluorescent_light.glb" id="2_jpdj3"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_k8684"]
+size = Vector3(8.337112, 0.37493896, 1.2137451)
+
+[node name="FluorescentLight" type="StaticBody3D" unique_id=554087022]
+collision_layer = 4
+collision_mask = 0
+script = ExtResource("1_b0hpt")
+
+[node name="fluorescent_light" parent="." unique_id=780830422 instance=ExtResource("2_jpdj3")]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=31557571]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.017936707, 0.116119385, -6.1035156e-05)
+shape = SubResource("BoxShape3D_k8684")
+
+[node name="AreaLight3D" type="AreaLight3D" parent="." unique_id=1498121146 groups=["lights"]]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 0, 0)
+layers = 4
+light_energy = 4.0
+area_range = 10.0
