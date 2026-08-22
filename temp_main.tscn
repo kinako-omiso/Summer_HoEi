@@ -9,6 +9,7 @@
 [ext_resource type="PackedScene" path="res://assets/3DModel/ceiling_square.tscn" id="7_ceiling"]
 [ext_resource type="PackedScene" uid="uid://dqwbx620higo1" path="res://demomonster/demomonster.tscn" id="8_rvlho"]
 [ext_resource type="PackedScene" uid="uid://dtwqe00ewj4d" path="res://demobreaker/breaker.tscn" id="9_qls1m"]
+[ext_resource type="PackedScene" uid="uid://cm1jwh0mcnaon" path="res://assets/3DModel/ceiling_square_with_light.tscn" id="10_qy14a"]
 
 [sub_resource type="Environment" id="Environment_k8684"]
 ambient_light_energy = 0.0
@@ -17,6 +18,9 @@ ambient_light_energy = 0.0
 script = ExtResource("1_27twd")
 
 [node name="Floor" parent="." unique_id=889951877 instance=ExtResource("3_floor")]
+
+[node name="Floor2" parent="." unique_id=235545749 instance=ExtResource("3_floor")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 14)
 
 [node name="WallNorth" parent="." unique_id=993036278 instance=ExtResource("4_wall")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.15, -6.87)
@@ -37,7 +41,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.15, -5.7)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.3, 0)
 
 [node name="AreaLight3D" type="AreaLight3D" parent="." unique_id=1713571431 groups=["lights"]]
-transform = Transform3D(1, 0, 0, 0, 5.9604645e-08, 1, 0, -1, 5.9604645e-08, 0, 5.8, 0)
+transform = Transform3D(1, 0, 0, 0, 5.9604645e-08, 1, 0, -1, 5.9604645e-08, 0, 6.1372595, 0)
 layers = 4
 light_energy = 2.0
 area_range = 18.0
@@ -56,6 +60,9 @@ transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 6.59
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=692099210]
 environment = SubResource("Environment_k8684")
+
+[node name="Ceiling2" parent="." unique_id=409838995 instance=ExtResource("10_qy14a")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.309783, 14.013746)
 
 [connection signal="hit" from="Player" to="." method="_on_player_hit"]
 [connection signal="lights_out" from="Breaker" to="." method="_on_breaker_lights_out"]
