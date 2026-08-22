@@ -24,6 +24,7 @@ window/stretch/aspect="expand"
 
 lights="ブレイカーで消灯するライト"
 player_lights="消灯後点灯"
+rodot_lights="ロボットのライトです"
 
 [input]
 
