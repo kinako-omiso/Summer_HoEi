@@ -1,7 +1,7 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene format=3 uid="uid://ct5xpy3mhlr6q"]
 
-[ext_resource type="PackedScene" path="res://assets/3DModel/door.glb" id="1_model"]
-[ext_resource type="Script" path="res://door_interactive.gd" id="2_script"]
+[ext_resource type="PackedScene" uid="uid://fcj6wo2p3dco" path="res://assets/3DModel/door.glb" id="1_model"]
+[ext_resource type="Script" uid="uid://dfn456pm3a5ym" path="res://door_interactive.gd" id="2_script"]
 
 [sub_resource type="BoxShape3D" id="BoxShape_door"]
 size = Vector3(2, 4, 0.12)
@@ -9,24 +9,21 @@ size = Vector3(2, 4, 0.12)
 [sub_resource type="BoxShape3D" id="BoxShape_interaction"]
 size = Vector3(4.5, 5.5, 4.5)
 
-[node name="InteractiveDoor" type="AnimatableBody3D"]
+[node name="InteractiveDoor" type="AnimatableBody3D" unique_id=987484679]
 collision_layer = 4
 collision_mask = 0
 script = ExtResource("2_script")
 
-[node name="Model" parent="." instance=ExtResource("1_model")]
-position = Vector3(1, 0, 0)
-rotation = Vector3(0, 1.5707964, 0)
-scale = Vector3(1, 1, -1)
+[node name="Model" parent="." unique_id=279513173 instance=ExtResource("1_model")]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, -1, 0, 4.371139e-08, 1, 0, 0)
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
-position = Vector3(1, 0, 0)
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=903656698]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0)
 shape = SubResource("BoxShape_door")
 
-[node name="InteractionArea" type="Area3D" parent="."]
-position = Vector3(1, 0, 0)
+[node name="InteractionArea" type="Area3D" parent="." unique_id=1205456913]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0)
 collision_layer = 0
-collision_mask = 1
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="InteractionArea"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="InteractionArea" unique_id=764489455]
 shape = SubResource("BoxShape_interaction")

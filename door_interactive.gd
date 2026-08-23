@@ -4,13 +4,16 @@ extends AnimatableBody3D
 @export var animation_duration: float = 0.45
 
 @onready var interaction_area: Area3D = $InteractionArea
-
+# 追加部分
+@export var navigation_link: NavigationLink3D
 var is_open := false
 var _is_moving := false
 
 
 func _ready() -> void:
 	_set_render_layers(self)
+	# 追加部分
+	navigation_link.enabled = false
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -36,6 +39,8 @@ func _toggle_door() -> void:
 	tween.tween_property(self, "rotation:y", target_angle, animation_duration)
 	await tween.finished
 	is_open = not is_open
+	# 追加部分
+	navigation_link.enabled = is_open
 	_is_moving = false
 
 
