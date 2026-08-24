@@ -26,8 +26,10 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.811, -0.499)
 
 [node name="SpotLight3D" type="SpotLight3D" parent="PlayerCamera" unique_id=1951833508 groups=["player_lights"]]
 layers = 5
+light_color = Color(0.54509807, 1, 1, 1)
 light_energy = 0.0
-spot_range = 6.0
+spot_range = 12.0
+spot_angle = 30.0
 
 [node name="Area3D" type="Area3D" parent="." unique_id=1007189964]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0110434, 0)
@@ -42,4 +44,6 @@ debug_color = Color(0.578948, 0.5525206, 0.029899785, 0.41960785)
 [node name="OmniLight3D" type="OmniLight3D" parent="." unique_id=1345512347 groups=["player_lights"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0110433, 0)
 layers = 5
+light_color = Color(0.654902, 1, 1, 1)
 light_energy = 0.0
+omni_range = 3.0
