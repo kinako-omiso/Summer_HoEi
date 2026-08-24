@@ -310,9 +310,6 @@ transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, 20.7
 [node name="Ceiling7" parent="NavigationRegion3D/room9" unique_id=1262526755 instance=ExtResource("10_qy14a")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.972782, 6.309783, 27.849987)
 
-[node name="MainCamera" type="Camera3D" parent="." unique_id=698277762]
-transform = Transform3D(-0.99992514, -0.010603828, 0.0061221235, -0.0041627, 0.7646201, 0.6444679, -0.011514924, 0.6443941, -0.76460695, 0, 9, 20.184479)
-
 [node name="Player" parent="." unique_id=943185070 instance=ExtResource("1_xmdk1")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5555232, 0.28004885, 15.689507)
 

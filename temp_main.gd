@@ -25,7 +25,7 @@ func _process(delta: float) -> void:
 		camera_change = 1
 
 	elif camera_change == 1 and Input.is_action_just_pressed("debug_camera_change"):
-		$MainCamera.make_current()
+		$demomonster/DebugCamera.make_current()
 		camera_change = -1
 
 # 仮死亡表示
