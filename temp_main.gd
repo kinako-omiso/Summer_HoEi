@@ -15,7 +15,7 @@ func _ready() -> void:
 
 	if world_environment and world_environment.environment:
 		# ゲーム開始時に背景エネルギーを 0.0 にして真っ暗にする
-		world_environment.environment.background_energy_multiplier = 1.0
+		world_environment.environment.background_energy_multiplier = 0.0
 
 # 作業がしやすいように三人称視点との切り替えを Cキー で行えるようにする
 # Called every frame. 'delta' is the elapsed time since the previous frame.
