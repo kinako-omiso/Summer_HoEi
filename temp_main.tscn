@@ -320,7 +320,7 @@ transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -7.3
 environment = SubResource("Environment_k8684")
 
 [node name="demomonster" parent="." unique_id=1203470103 node_paths=PackedStringArray("player") instance=ExtResource("8_rvlho")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.572, 0.11713719, 9.274052)
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -1.572, 0.11713719, 9.274052)
 player = NodePath("../Player")
 
 [connection signal="hit" from="Player" to="." method="_on_player_hit"]
