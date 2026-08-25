@@ -1,19 +1,30 @@
 [gd_scene format=3 uid="uid://dqwbx620higo1"]
 
+[ext_resource type="Script" uid="uid://cj446712mcn8c" path="res://demomonster/demomonster.gd" id="1_3wso1"]
 [ext_resource type="PackedScene" uid="uid://ddvxy4axtx7d6" path="res://assets/3DModel/robot.tscn" id="1_wddve"]
 
-[sub_resource type="CylinderShape3D" id="CylinderShape3D_k8684"]
-height = 2.8847656
-radius = 0.83984375
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_3wso1"]
+radius = 0.32080078
+height = 2.8276367
 
-[node name="demomonster" type="CharacterBody3D" unique_id=1203470103]
+[node name="demomonster" type="CharacterBody3D" unique_id=1203470103 groups=["enemy"]]
 collision_layer = 2
-collision_mask = 5
+collision_mask = 13
+script = ExtResource("1_3wso1")
 
 [node name="pivod" type="Node3D" parent="." unique_id=213938137]
 
 [node name="robot" parent="pivod" unique_id=1486726242 instance=ExtResource("1_wddve")]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0, 1.0149076, 0)
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=225296992]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4423828, 0)
-shape = SubResource("CylinderShape3D_k8684")
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=225296992 groups=["enemy"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4178147, 0)
+shape = SubResource("CapsuleShape3D_3wso1")
+
+[node name="SpotLight3D" type="SpotLight3D" parent="." unique_id=899474108 groups=["player_lights"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.9664106, 0)
+layers = 2
+light_color = Color(0.80813736, 3.272891e-06, 7.70092e-07, 1)
+
+[node name="DebugCamera" type="Camera3D" parent="." unique_id=10663027]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.6012452, 2.802894)

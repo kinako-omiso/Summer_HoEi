@@ -6,29 +6,33 @@
 [sub_resource type="CylinderShape3D" id="CylinderShape3D_k8684"]
 
 [sub_resource type="CylinderShape3D" id="CylinderShape3D_mrimj"]
-radius = 0.68310547
+radius = 1.5776367
 
 [node name="Player" type="CharacterBody3D" unique_id=943185070]
-collision_mask = 4
+collision_mask = 12
 script = ExtResource("1_onrkg")
 
 [node name="pivod" type="Node3D" parent="." unique_id=270018981]
 
 [node name="Playerは円柱形" parent="pivod" unique_id=705240815 instance=ExtResource("1_4flbx")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0110434, 0)
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1208088471]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0192633, 0)
 shape = SubResource("CylinderShape3D_k8684")
 
 [node name="PlayerCamera" type="Camera3D" parent="." unique_id=2018367314]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.7, -0.499)
-cull_mask = 1048574
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.811, -0.499)
 
 [node name="SpotLight3D" type="SpotLight3D" parent="PlayerCamera" unique_id=1951833508 groups=["player_lights"]]
 layers = 5
+light_color = Color(0.54509807, 1, 1, 1)
 light_energy = 0.0
-spot_range = 6.0
+spot_range = 12.0
+spot_angle = 30.0
 
 [node name="Area3D" type="Area3D" parent="." unique_id=1007189964]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0110434, 0)
 collision_layer = 0
 collision_mask = 2
 monitorable = false
@@ -38,6 +42,8 @@ shape = SubResource("CylinderShape3D_mrimj")
 debug_color = Color(0.578948, 0.5525206, 0.029899785, 0.41960785)
 
 [node name="OmniLight3D" type="OmniLight3D" parent="." unique_id=1345512347 groups=["player_lights"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0110433, 0)
+layers = 5
+light_color = Color(0.654902, 1, 1, 1)
 light_energy = 0.0
-
-[connection signal="body_entered" from="Area3D" to="." method="_on_area_3d_body_entered"]
+omni_range = 3.0

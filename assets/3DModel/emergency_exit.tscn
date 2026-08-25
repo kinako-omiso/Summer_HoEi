@@ -4,7 +4,7 @@
 [ext_resource type="PackedScene" uid="uid://klaayul3hl22" path="res://assets/3DModel/emergency_exit.glb" id="2_4wp8j"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_k8684"]
-size = Vector3(0.6602783, 1.4281769, 3.1955261)
+size = Vector3(0.6602783, 4.82555, 3.1955261)
 
 [node name="EmergencyExit" type="StaticBody3D" unique_id=1181305597]
 collision_layer = 4
@@ -14,7 +14,7 @@ script = ExtResource("1_5vgpp")
 [node name="Model" parent="." unique_id=1403696424 instance=ExtResource("2_4wp8j")]
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1116109973]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.1035156e-05, 0.017814636, 0.008834839)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.1035156e-05, -1.680872, 0.008834839)
 shape = SubResource("BoxShape3D_k8684")
 
 [node name="OmniLight3D" type="OmniLight3D" parent="." unique_id=627739340 groups=["player_lights"]]

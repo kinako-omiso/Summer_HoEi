@@ -1,8 +1,8 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene format=3 uid="uid://bwrwvky5wfc2c"]
 
-[ext_resource type="PackedScene" path="res://assets/3DModel/wall_with_door.glb" id="1_model"]
-[ext_resource type="Script" path="res://world_surface.gd" id="2_script"]
-[ext_resource type="PackedScene" path="res://assets/3DModel/door_interactive.tscn" id="3_door"]
+[ext_resource type="PackedScene" uid="uid://v2a33mjpfoby" path="res://assets/3DModel/wall_with_door.glb" id="1_model"]
+[ext_resource type="Script" uid="uid://bafdgvvgwfh61" path="res://world_surface.gd" id="2_script"]
+[ext_resource type="PackedScene" uid="uid://ct5xpy3mhlr6q" path="res://assets/3DModel/door_interactive.tscn" id="3_door"]
 
 [sub_resource type="BoxShape3D" id="BoxShape_left"]
 size = Vector3(0.78, 6, 0.26)
@@ -13,24 +13,29 @@ size = Vector3(11.02, 6, 0.26)
 [sub_resource type="BoxShape3D" id="BoxShape_header"]
 size = Vector3(2.2, 2, 0.26)
 
-[node name="WallWithDoor" type="StaticBody3D"]
+[node name="WallWithDoor" type="StaticBody3D" unique_id=948117413]
 collision_layer = 4
 collision_mask = 0
 script = ExtResource("2_script")
 
-[node name="Model" parent="." instance=ExtResource("1_model")]
+[node name="Model" parent="." unique_id=1573236524 instance=ExtResource("1_model")]
 
-[node name="Door" parent="." instance=ExtResource("3_door")]
-position = Vector3(-6.12, -1, 0)
+[node name="Door" parent="." unique_id=40721974 node_paths=PackedStringArray("navigation_link") instance=ExtResource("3_door")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.12, -1, 0)
+navigation_link = NodePath("../NavigationLink3D")
 
-[node name="CollisionLeft" type="CollisionShape3D" parent="."]
-position = Vector3(-6.61, 0, 0)
+[node name="CollisionLeft" type="CollisionShape3D" parent="." unique_id=215934551]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.61, 0, 0)
 shape = SubResource("BoxShape_left")
 
-[node name="CollisionRight" type="CollisionShape3D" parent="."]
-position = Vector3(1.49, 0, 0)
+[node name="CollisionRight" type="CollisionShape3D" parent="." unique_id=1740073439]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.49, 0, 0)
 shape = SubResource("BoxShape_right")
 
-[node name="CollisionHeader" type="CollisionShape3D" parent="."]
-position = Vector3(-5.12, 2, 0)
+[node name="CollisionHeader" type="CollisionShape3D" parent="." unique_id=906922849]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.12, 2, 0)
 shape = SubResource("BoxShape_header")
+
+[node name="NavigationLink3D" type="NavigationLink3D" parent="." unique_id=226668092 groups=["doors"]]
+start_position = Vector3(-5.25, -2.5, 1)
+end_position = Vector3(-5.25, -2.5, -1)

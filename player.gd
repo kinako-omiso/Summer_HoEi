@@ -15,6 +15,13 @@ func _input(event):
 
 # Playerの操作
 func _physics_process(delta: float) -> void:
+	# 敵とのあたり判定
+	for body in $Area3D.get_overlapping_bodies():
+		if body.is_in_group("enemy"):
+			if _can_see_enemy(body):
+				die()
+				return
+				
 	# Add the gravity.
 	if not is_on_floor():
 		velocity += get_gravity() * delta
@@ -38,11 +45,49 @@ func _physics_process(delta: float) -> void:
 
 	move_and_slide()
 
+
+func _unhandled_input(event):
+	if event.is_action_pressed("interact"):
+
+		var enemy = get_tree().get_first_node_in_group("enemy")
+
+		if enemy:
+			enemy.receive_interaction_position(
+				global_position
+			)
+
 # シグナル発信とプレイヤーの破棄
 func die():
 	hit.emit()
 	queue_free()
 
-# 敵とのあたり判定
-func _on_area_3d_body_entered(body: Node3D) -> void:
-	die()
+
+# 敵との間に壁はあるか？
+func _can_see_enemy(enemy: Node3D) -> bool:
+
+	var space_state := get_world_3d().direct_space_state
+
+	var from := global_position + Vector3.UP * 0.5
+	var to := enemy.global_position + Vector3.UP * 0.5
+
+	var query := PhysicsRayQueryParameters3D.create(
+		from,
+		to
+	)
+
+	# 敵のLayer と壁を見る
+	query.collision_mask = 2 | 4
+
+	query.exclude = [self]
+
+	var result := space_state.intersect_ray(query)
+
+	if result.is_empty():
+		return false
+
+	var collider = result["collider"]
+
+	if collider == enemy:
+		return true
+
+	return false
