@@ -45,6 +45,17 @@ func _physics_process(delta: float) -> void:
 
 	move_and_slide()
 
+
+func _unhandled_input(event):
+	if event.is_action_pressed("interact"):
+
+		var enemy = get_tree().get_first_node_in_group("enemy")
+
+		if enemy:
+			enemy.receive_interaction_position(
+				global_position
+			)
+
 # シグナル発信とプレイヤーの破棄
 func die():
 	hit.emit()

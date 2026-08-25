@@ -26,6 +26,7 @@ lights="ブレイカーで消灯するライト"
 player_lights="消灯後点灯"
 rodot_lights="ロボットのライトです"
 enemy="敵"
+doors="ドア！！"
 
 [input]
 

@@ -36,6 +36,6 @@ shape = SubResource("BoxShape_right")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.12, 2, 0)
 shape = SubResource("BoxShape_header")
 
-[node name="NavigationLink3D" type="NavigationLink3D" parent="." unique_id=226668092]
+[node name="NavigationLink3D" type="NavigationLink3D" parent="." unique_id=226668092 groups=["doors"]]
 start_position = Vector3(-5.25, -2.5, 1)
 end_position = Vector3(-5.25, -2.5, -1)
