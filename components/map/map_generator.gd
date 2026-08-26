@@ -573,7 +573,7 @@ func _add_elevator_terminal(parent: Node3D, door_point: Vector2, yaw: float) -> 
 	var door := ELEVATOR_DOOR.instantiate() as Node3D
 	door.name = "ElevatorDoor"
 	parent.add_child(door)
-	door.position = Vector3(0.636, 2.622, 1.549)
+	door.position = Vector3(0.0, 2.622, 0.0)
 
 
 func _prune_candidate_group(room: Node, group_name: StringName) -> int:

@@ -27,6 +27,8 @@ player_lights="消灯後点灯"
 rodot_lights="ロボットのライトです"
 enemy="敵"
 doors="ドア！！"
+player="プレイヤー"
+elevator_doors="停電時に開閉するエレベーター扉"
 
 [input]
 
