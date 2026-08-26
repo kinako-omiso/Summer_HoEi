@@ -17,10 +17,11 @@ geometry_collision_mask = 4
 
 [sub_resource type="Environment" id="Environment_runtime"]
 background_mode = 1
-background_color = Color(0.015, 0.018, 0.025, 1)
-background_energy_multiplier = 0.0
-ambient_light_source = 3
-ambient_light_energy = 0.0
+background_color = Color(0.025, 0.03, 0.04, 1)
+background_energy_multiplier = 0.1
+ambient_light_source = 2
+ambient_light_color = Color(0.7, 0.74, 0.82, 1)
+ambient_light_energy = 0.18
 
 [node name="TempMain" type="Node"]
 script = ExtResource("1_main")

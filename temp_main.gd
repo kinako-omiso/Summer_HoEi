@@ -7,7 +7,6 @@ signal runtime_map_ready(seed_value: int)
 @onready var map_generator: Node3D = $NavigationRegion3D/MapGenerator
 @onready var player: CharacterBody3D = $Player
 @onready var monster: CharacterBody3D = $demomonster
-@onready var world_environment: WorldEnvironment = $WorldEnvironment
 
 var camera_change := 1
 var is_runtime_map_ready := false
@@ -30,9 +29,6 @@ func _ready() -> void:
 	monster.player = player
 	$Player/PlayerCamera.make_current()
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-
-	if world_environment != null and world_environment.environment != null:
-		world_environment.environment.background_energy_multiplier = 0.0
 
 	# Allow generated StaticBody3D nodes to enter the physics space before
 	# parsing source geometry for the runtime NavigationMesh.

@@ -4,31 +4,36 @@ extends Node3D
 signal map_generated(seed_value: int)
 
 const ROOM_COUNT := 6
-const MAIN_EDGE_COUNT := 6
-const CORRIDOR_WIDTH := 8.0
-const CORRIDOR_HALF_WIDTH := CORRIDOR_WIDTH * 0.5
-const CORRIDOR_SOURCE_LENGTH := 28.0
-const JUNCTION_HALF_SIZE := 4.0
-const JUNCTION_SURFACE_SIZE := 12.0
+const GRID_SIZE := 3
 const ROOM_HALF_SIZE := 7.0
-const ROOM_DOOR_OFFSET := Vector2(-5.12, -6.87)
+const ROOM_WALL_OFFSET := 6.87
 const ROOM_WALL_HEIGHT := 3.15
-const MAX_LAYOUT_ATTEMPTS := 80
-const MAX_BRANCH_ATTEMPTS := 96
+const CORRIDOR_SOURCE_LENGTH := 28.0
+const MAX_LAYOUT_ATTEMPTS := 160
+
+const SIDE_NORTH := "north"
+const SIDE_EAST := "east"
+const SIDE_SOUTH := "south"
+const SIDE_WEST := "west"
+const ALL_SIDES: Array[String] = [SIDE_NORTH, SIDE_EAST, SIDE_SOUTH, SIDE_WEST]
+const SIDE_VECTORS := {
+	SIDE_NORTH: Vector2(0.0, -1.0),
+	SIDE_EAST: Vector2(1.0, 0.0),
+	SIDE_SOUTH: Vector2(0.0, 1.0),
+	SIDE_WEST: Vector2(-1.0, 0.0),
+}
 
 const CORRIDOR_MODULE := preload("res://components/map/corridor_module.tscn")
-const FLOOR_SQUARE := preload("res://assets/3DModel/floor_square.tscn")
-const CEILING_SQUARE_WITH_LIGHT := preload("res://assets/3DModel/ceiling_square_with_light.tscn")
 const ROOM_A := preload("res://components/rooms/room_a_office.tscn")
 const ROOM_B := preload("res://components/rooms/room_b_storage.tscn")
-const ROOM_ENTRANCE := preload("res://assets/3DModel/wall_with_door.tscn")
+const ROOM_WALL := preload("res://assets/3DModel/wall_no_door.tscn")
+const CENTERED_DOOR_WALL := preload("res://components/map/centered_wall_with_door.tscn")
 const ELEVATOR := preload("res://assets/3DModel/elevator.tscn")
 const ELEVATOR_DOOR := preload("res://assets/3DModel/elevator_door.tscn")
 
-@export_range(100.0, 500.0, 1.0) var minimum_corridor_length := 100.0
-@export_range(100.0, 500.0, 1.0) var maximum_corridor_length := 500.0
-@export var allow_diagonal_turns := true
-@export_range(0.0, 1.0, 0.05) var elevator_room_attachment_chance := 0.35
+@export_range(3.0, 20.0, 0.5) var minimum_corridor_length := 3.0
+@export_range(3.0, 20.0, 0.5) var maximum_corridor_length := 20.0
+@export_range(0.0, 1.0, 0.05) var extra_connection_chance := 0.45
 @export var seed_override: int = 0
 
 var generated_seed: int = 0
@@ -43,26 +48,18 @@ func generate_map(requested_seed: int = 0) -> bool:
 	_clear_generated_map()
 	_configure_rng(requested_seed)
 	var layout := _build_valid_layout()
-	if not layout.is_empty():
-		last_layout = layout
-		_instantiate_layout(layout)
-		map_generated.emit(generated_seed)
-		return true
-	push_error("MapGenerator could not create a non-overlapping map after %d attempts." % MAX_LAYOUT_ATTEMPTS)
-	return false
+	if layout.is_empty():
+		push_error("MapGenerator could not create a compact connected map after %d attempts." % MAX_LAYOUT_ATTEMPTS)
+		return false
+	last_layout = layout
+	_instantiate_layout(layout)
+	map_generated.emit(generated_seed)
+	return true
 
 
 func generate_layout_for_seed(test_seed: int) -> Dictionary:
 	_configure_rng(test_seed)
 	return _build_valid_layout()
-
-
-func _build_valid_layout() -> Dictionary:
-	for _attempt: int in range(MAX_LAYOUT_ATTEMPTS):
-		var layout := _try_build_layout()
-		if not layout.is_empty():
-			return layout
-	return {}
 
 
 func _configure_rng(requested_seed: int) -> void:
@@ -82,235 +79,217 @@ func _clear_generated_map() -> void:
 	last_layout = {}
 
 
-func _try_build_layout() -> Dictionary:
-	var main_points := _try_build_main_corridor()
-	if main_points.is_empty():
-		return {}
-
-	var main_polygons: Array[PackedVector2Array] = []
-	for edge_index: int in range(main_points.size() - 1):
-		main_polygons.append(
-			_segment_polygon(main_points[edge_index], main_points[edge_index + 1], CORRIDOR_HALF_WIDTH + 0.2)
-		)
-
-	var branch_specs: Array[Dictionary] = []
-	var branch_polygons: Array[PackedVector2Array] = []
-	var room_polygons: Array[PackedVector2Array] = []
-	var room_specs: Array[Dictionary] = []
-
-	for room_index: int in range(ROOM_COUNT):
-		var branch_spec := _try_place_room_branch(
-			room_index,
-			main_points,
-			main_polygons,
-			branch_polygons,
-			room_polygons
-		)
-		if branch_spec.is_empty():
-			return {}
-
-		branch_specs.append(branch_spec)
-		branch_polygons.append(branch_spec["corridor_polygon"])
-		room_polygons.append(branch_spec["room_polygon"])
-		room_specs.append(
-			{
-				"type": "A" if _rng.randi_range(0, 1) == 0 else "B",
-				"origin": branch_spec["room_origin"],
-				"yaw": branch_spec["room_yaw"],
-				"door_point": branch_spec["end"],
-			}
-		)
-
-	var direct_room_candidates: Array[int] = []
-	for room_index: int in range(room_specs.size()):
-		if room_specs[room_index]["type"] == "A":
-			direct_room_candidates.append(room_index)
-
-	var elevator_mode := "corridor"
-	var elevator_room_index := -1
-	if not direct_room_candidates.is_empty() and _rng.randf() < elevator_room_attachment_chance:
-		elevator_mode = "room"
-		elevator_room_index = direct_room_candidates[_rng.randi_range(0, direct_room_candidates.size() - 1)]
-
-	var turn_report := _analyze_turns(main_points)
-	return {
-		"seed": generated_seed,
-		"main_points": main_points,
-		"branches": branch_specs,
-		"rooms": room_specs,
-		"elevator_mode": elevator_mode,
-		"elevator_room_index": elevator_room_index,
-		"right_angle_turns": turn_report["right_angle_turns"],
-		"has_diagonal_turn": turn_report["has_diagonal_turn"],
-	}
-
-
-func _try_build_main_corridor() -> Array[Vector2]:
-	for _attempt: int in range(80):
-		var points: Array[Vector2] = [Vector2.ZERO]
-		var segment_polygons: Array[PackedVector2Array] = []
-		var yaw := float(_rng.randi_range(0, 3)) * PI * 0.5
-		var valid := true
-
-		for edge_index: int in range(MAIN_EDGE_COUNT):
-			if edge_index == 1 or edge_index == 2:
-				yaw += (PI * 0.5) * (-1.0 if _rng.randi_range(0, 1) == 0 else 1.0)
-			elif edge_index > 2:
-				var turn_options: Array[float] = [-PI * 0.5, PI * 0.5]
-				if allow_diagonal_turns:
-					turn_options.append_array([-PI * 0.25, PI * 0.25])
-				yaw += turn_options[_rng.randi_range(0, turn_options.size() - 1)]
-
-			var length := _rng.randf_range(minimum_corridor_length, maximum_corridor_length)
-			var direction := _direction_from_yaw(yaw)
-			var candidate_end := points[-1] + direction * length
-			var candidate_polygon := _segment_polygon(
-				points[-1], candidate_end, CORRIDOR_HALF_WIDTH + 1.0
-			)
-
-			for previous_index: int in range(segment_polygons.size() - 1):
-				if _polygons_overlap(candidate_polygon, segment_polygons[previous_index]):
-					valid = false
-					break
-			if not valid:
-				break
-
-			points.append(candidate_end)
-			segment_polygons.append(candidate_polygon)
-
-		if valid and points.size() == MAIN_EDGE_COUNT + 1:
-			return points
-
-	return []
-
-
-func _try_place_room_branch(
-	room_index: int,
-	main_points: Array[Vector2],
-	main_polygons: Array[PackedVector2Array],
-	existing_branch_polygons: Array[PackedVector2Array],
-	existing_room_polygons: Array[PackedVector2Array],
-) -> Dictionary:
-	var start := main_points[room_index]
-	var connected_directions: Array[Vector2] = []
-	if room_index > 0:
-		connected_directions.append((main_points[room_index - 1] - start).normalized())
-	if room_index < main_points.size() - 1:
-		connected_directions.append((main_points[room_index + 1] - start).normalized())
-
-	var angle_options: Array[float] = []
-	var angle_step := PI * 0.25 if allow_diagonal_turns else PI * 0.5
-	var option_count := 8 if allow_diagonal_turns else 4
-	for angle_index: int in range(option_count):
-		angle_options.append(float(angle_index) * angle_step)
-	_shuffle_with_rng(angle_options)
-
-	for attempt: int in range(MAX_BRANCH_ATTEMPTS):
-		if attempt > 0 and attempt % angle_options.size() == 0:
-			_shuffle_with_rng(angle_options)
-		var yaw := angle_options[attempt % angle_options.size()]
-		var direction := _direction_from_yaw(yaw)
-		var direction_is_free := true
-		for connected_direction: Vector2 in connected_directions:
-			if direction.dot(connected_direction) > 0.70:
-				direction_is_free = false
-				break
-		if not direction_is_free:
-			continue
-
-		var length := _rng.randf_range(minimum_corridor_length, maximum_corridor_length)
-		var end := start + direction * length
-		var corridor_polygon := _segment_polygon(start, end, CORRIDOR_HALF_WIDTH + 0.3)
-		var intersects_existing := false
-
-		for main_edge_index: int in range(main_polygons.size()):
-			if main_edge_index == room_index or main_edge_index == room_index - 1:
-				continue
-			if _polygons_overlap(corridor_polygon, main_polygons[main_edge_index]):
-				intersects_existing = true
-				break
-		if intersects_existing:
-			continue
-
-		for existing_polygon: PackedVector2Array in existing_branch_polygons:
-			if _polygons_overlap(corridor_polygon, existing_polygon):
-				intersects_existing = true
-				break
-		if intersects_existing:
-			continue
-
-		var room_yaw := atan2(direction.x, direction.y)
-		var room_origin := end - _rotate_y_2d(ROOM_DOOR_OFFSET, room_yaw)
-		var room_polygon := _oriented_square_polygon(room_origin, ROOM_HALF_SIZE + 0.5, room_yaw)
-
-		for existing_room_polygon: PackedVector2Array in existing_room_polygons:
-			if _polygons_overlap(room_polygon, existing_room_polygon):
-				intersects_existing = true
-				break
-		if intersects_existing:
-			continue
-
-		for main_polygon: PackedVector2Array in main_polygons:
-			if _polygons_overlap(room_polygon, main_polygon):
-				intersects_existing = true
-				break
-		if intersects_existing:
-			continue
-
-		return {
-			"start": start,
-			"end": end,
-			"length": length,
-			"yaw": yaw,
-			"room_origin": room_origin,
-			"room_yaw": room_yaw,
-			"corridor_polygon": corridor_polygon,
-			"room_polygon": room_polygon,
-		}
-
+func _build_valid_layout() -> Dictionary:
+	for _attempt: int in range(MAX_LAYOUT_ATTEMPTS):
+		var layout := _try_build_compact_layout()
+		if not layout.is_empty():
+			return layout
 	return {}
 
 
+func _try_build_compact_layout() -> Dictionary:
+	var cells := _grow_connected_cells()
+	var connections := _select_room_connections(cells)
+	if connections.size() < ROOM_COUNT - 1:
+		return {}
+
+	var column_gaps: Array[float] = [
+		_rng.randf_range(minimum_corridor_length, maximum_corridor_length),
+		_rng.randf_range(minimum_corridor_length, maximum_corridor_length),
+	]
+	var row_gaps: Array[float] = [
+		_rng.randf_range(minimum_corridor_length, maximum_corridor_length),
+		_rng.randf_range(minimum_corridor_length, maximum_corridor_length),
+	]
+	var column_positions := _grid_axis_positions(column_gaps)
+	var row_positions := _grid_axis_positions(row_gaps)
+
+	var room_specs: Array[Dictionary] = []
+	for cell: Vector2i in cells:
+		room_specs.append({
+			"cell": cell,
+			"origin": Vector2(column_positions[cell.x], row_positions[cell.y]),
+			"type": "A" if _rng.randi_range(0, 1) == 0 else "B",
+			"entrances": [] as Array[String],
+			"elevator_side": "",
+		})
+
+	var corridor_specs: Array[Dictionary] = []
+	for connection: Dictionary in connections:
+		var first_index: int = connection["first"]
+		var second_index: int = connection["second"]
+		var first_cell: Vector2i = cells[first_index]
+		var second_cell: Vector2i = cells[second_index]
+		var sides := _connection_sides(first_cell, second_cell)
+		var first_side: String = sides[0]
+		var second_side: String = sides[1]
+		var first_entrances: Array = room_specs[first_index]["entrances"]
+		var second_entrances: Array = room_specs[second_index]["entrances"]
+		first_entrances.append(first_side)
+		second_entrances.append(second_side)
+
+		var first_origin: Vector2 = room_specs[first_index]["origin"]
+		var second_origin: Vector2 = room_specs[second_index]["origin"]
+		var start := first_origin + _side_vector(first_side) * ROOM_WALL_OFFSET
+		var end := second_origin + _side_vector(second_side) * ROOM_WALL_OFFSET
+		corridor_specs.append({
+			"from": start,
+			"to": end,
+			"length": start.distance_to(end),
+			"first_room": first_index,
+			"second_room": second_index,
+		})
+
+	var elevator_attachment := _choose_elevator_attachment(cells, room_specs)
+	if elevator_attachment.is_empty():
+		return {}
+	var elevator_room_index: int = elevator_attachment["room_index"]
+	var elevator_side: String = elevator_attachment["side"]
+	var elevator_entrances: Array = room_specs[elevator_room_index]["entrances"]
+	elevator_entrances.append(elevator_side)
+	room_specs[elevator_room_index]["elevator_side"] = elevator_side
+
+	return {
+		"seed": generated_seed,
+		"cells": cells,
+		"rooms": room_specs,
+		"corridors": corridor_specs,
+		"connections": connections,
+		"elevator_mode": "room",
+		"elevator_room_index": elevator_room_index,
+		"elevator_side": elevator_side,
+	}
+
+
+func _grow_connected_cells() -> Array[Vector2i]:
+	var occupied: Array[Vector2i] = [
+		Vector2i(_rng.randi_range(0, GRID_SIZE - 1), _rng.randi_range(0, GRID_SIZE - 1))
+	]
+	while occupied.size() < ROOM_COUNT:
+		var candidates: Array[Vector2i] = []
+		for cell: Vector2i in occupied:
+			for offset: Vector2i in [Vector2i.UP, Vector2i.RIGHT, Vector2i.DOWN, Vector2i.LEFT]:
+				var candidate := cell + offset
+				if _cell_is_inside_grid(candidate) and not occupied.has(candidate) and not candidates.has(candidate):
+					candidates.append(candidate)
+		if candidates.is_empty():
+			return []
+		occupied.append(candidates[_rng.randi_range(0, candidates.size() - 1)])
+	return occupied
+
+
+func _select_room_connections(cells: Array[Vector2i]) -> Array[Dictionary]:
+	var cell_indices: Dictionary = {}
+	for room_index: int in range(cells.size()):
+		cell_indices[cells[room_index]] = room_index
+
+	var candidate_edges: Array[Dictionary] = []
+	for room_index: int in range(cells.size()):
+		for offset: Vector2i in [Vector2i.RIGHT, Vector2i.DOWN]:
+			var neighbor := cells[room_index] + offset
+			if cell_indices.has(neighbor):
+				candidate_edges.append({
+					"first": room_index,
+					"second": int(cell_indices[neighbor]),
+				})
+	_shuffle_with_rng(candidate_edges)
+
+	var parents: Array[int] = []
+	var degrees: Array[int] = []
+	for room_index: int in range(cells.size()):
+		parents.append(room_index)
+		degrees.append(0)
+
+	var selected: Array[Dictionary] = []
+	var remaining: Array[Dictionary] = []
+	for edge: Dictionary in candidate_edges:
+		var first: int = edge["first"]
+		var second: int = edge["second"]
+		if _find_set(parents, first) != _find_set(parents, second) and degrees[first] < 3 and degrees[second] < 3:
+			_union_sets(parents, first, second)
+			degrees[first] += 1
+			degrees[second] += 1
+			selected.append(edge)
+		else:
+			remaining.append(edge)
+	if selected.size() != ROOM_COUNT - 1:
+		return []
+
+	_shuffle_with_rng(remaining)
+	for edge: Dictionary in remaining:
+		var first: int = edge["first"]
+		var second: int = edge["second"]
+		if degrees[first] >= 3 or degrees[second] >= 3:
+			continue
+		if _rng.randf() <= extra_connection_chance:
+			degrees[first] += 1
+			degrees[second] += 1
+			selected.append(edge)
+	return selected
+
+
+func _choose_elevator_attachment(cells: Array[Vector2i], room_specs: Array[Dictionary]) -> Dictionary:
+	var occupied: Dictionary = {}
+	for cell: Vector2i in cells:
+		occupied[cell] = true
+
+	var candidates: Array[Dictionary] = []
+	for room_index: int in range(room_specs.size()):
+		var entrances: Array = room_specs[room_index]["entrances"]
+		if entrances.size() >= 3:
+			continue
+		var cell: Vector2i = cells[room_index]
+		for side: String in ALL_SIDES:
+			if entrances.has(side):
+				continue
+			var neighbor_cell := cell + _side_grid_offset(side)
+			if not _cell_is_inside_grid(neighbor_cell) or not occupied.has(neighbor_cell):
+				candidates.append({"room_index": room_index, "side": side})
+	if candidates.is_empty():
+		return {}
+	return candidates[_rng.randi_range(0, candidates.size() - 1)]
+
+
+func _grid_axis_positions(gaps: Array[float]) -> Array[float]:
+	var positions: Array[float] = [0.0]
+	for gap: float in gaps:
+		positions.append(positions[-1] + ROOM_WALL_OFFSET * 2.0 + gap)
+	var center := (positions[0] + positions[-1]) * 0.5
+	for index: int in range(positions.size()):
+		positions[index] -= center
+	return positions
+
+
+func _connection_sides(first: Vector2i, second: Vector2i) -> Array[String]:
+	var delta := second - first
+	if delta == Vector2i.RIGHT:
+		return [SIDE_EAST, SIDE_WEST]
+	if delta == Vector2i.LEFT:
+		return [SIDE_WEST, SIDE_EAST]
+	if delta == Vector2i.DOWN:
+		return [SIDE_SOUTH, SIDE_NORTH]
+	return [SIDE_NORTH, SIDE_SOUTH]
+
+
 func _instantiate_layout(layout: Dictionary) -> void:
-	var main_corridors := Node3D.new()
-	main_corridors.name = "MainCorridors"
-	add_child(main_corridors)
-	var branch_corridors := Node3D.new()
-	branch_corridors.name = "BranchCorridors"
-	add_child(branch_corridors)
-	var junctions := Node3D.new()
-	junctions.name = "Junctions"
-	add_child(junctions)
-	var rooms_node := Node3D.new()
-	rooms_node.name = "Rooms"
-	add_child(rooms_node)
-	var elevator_node := Node3D.new()
-	elevator_node.name = "ElevatorTerminal"
-	add_child(elevator_node)
+	var corridors_root := Node3D.new()
+	corridors_root.name = "Corridors"
+	add_child(corridors_root)
+	var rooms_root := Node3D.new()
+	rooms_root.name = "Rooms"
+	add_child(rooms_root)
+	var elevator_root := Node3D.new()
+	elevator_root.name = "ElevatorTerminal"
+	add_child(elevator_root)
 
-	var main_points: Array[Vector2] = layout["main_points"]
-	for edge_index: int in range(main_points.size() - 1):
+	var corridors: Array = layout["corridors"]
+	for corridor_index: int in range(corridors.size()):
+		var corridor: Dictionary = corridors[corridor_index]
 		_add_corridor_edge(
-			main_corridors,
-			main_points[edge_index],
-			main_points[edge_index + 1],
-			JUNCTION_HALF_SIZE,
-			JUNCTION_HALF_SIZE,
-			"MainEdge%02d" % (edge_index + 1)
-		)
-	for point_index: int in range(main_points.size()):
-		_add_junction(junctions, main_points[point_index], "Junction%02d" % (point_index + 1))
-
-	var branches: Array = layout["branches"]
-	for branch_index: int in range(branches.size()):
-		var branch: Dictionary = branches[branch_index]
-		_add_corridor_edge(
-			branch_corridors,
-			branch["start"],
-			branch["end"],
-			JUNCTION_HALF_SIZE,
-			0.0,
-			"RoomBranch%02d" % (branch_index + 1)
+			corridors_root,
+			corridor["from"],
+			corridor["to"],
+			"RoomConnection%02d" % (corridor_index + 1)
 		)
 
 	var room_instances: Array[Node3D] = []
@@ -320,16 +299,15 @@ func _instantiate_layout(layout: Dictionary) -> void:
 		var room_scene: PackedScene = ROOM_A if room_spec["type"] == "A" else ROOM_B
 		var room := room_scene.instantiate() as Node3D
 		room.name = "Room%02d_%s" % [room_index + 1, room_spec["type"]]
-		rooms_node.add_child(room)
+		rooms_root.add_child(room)
 		var origin: Vector2 = room_spec["origin"]
-		room.position = Vector3(origin.x, 0.0, origin.y)
-		room.rotation.y = room_spec["yaw"]
+		room.position = _to_world(origin)
+		var entrances: Array = room_spec["entrances"]
+		var elevator_side: String = room_spec["elevator_side"]
+		_configure_room_walls(room, entrances, elevator_side)
 		room.set_meta("generated_room_type", room_spec["type"])
-
-		var entrance := ROOM_ENTRANCE.instantiate() as Node3D
-		entrance.name = "EntranceWallWithDoor"
-		room.add_child(entrance)
-		entrance.position = Vector3(0.0, ROOM_WALL_HEIGHT, -6.87)
+		room.set_meta("generated_entrance_count", entrances.size())
+		room.set_meta("generated_entrance_sides", entrances.duplicate())
 
 		var candidate_counts := {
 			"desks": _prune_candidate_group(room, &"random_desk_monitor_candidates"),
@@ -339,82 +317,101 @@ func _instantiate_layout(layout: Dictionary) -> void:
 		room.set_meta("generated_candidate_counts", candidate_counts)
 		room_instances.append(room)
 
-	if layout["elevator_mode"] == "room":
-		var target_room_index: int = layout["elevator_room_index"]
-		var target_room := room_instances[target_room_index]
-		var south_wall := target_room.get_node_or_null("Structure/WallSouth")
-		if south_wall != null:
-			south_wall.free()
-		var breaker := target_room.get_node_or_null("Breaker") as Node3D
-		if breaker != null:
+	var elevator_room_index: int = layout["elevator_room_index"]
+	var elevator_side: String = layout["elevator_side"]
+	var target_origin: Vector2 = room_specs[elevator_room_index]["origin"]
+	var outward := _side_vector(elevator_side)
+	var elevator_door_point := target_origin + outward * ROOM_WALL_OFFSET
+	_add_elevator_terminal(elevator_root, elevator_door_point, _yaw_from_direction(outward))
+
+	player_spawn_position = room_instances[0].global_position + Vector3(0.0, 0.45, 0.0)
+	robot_spawn_position = room_instances[-1].global_position + Vector3(0.0, 0.45, 0.0)
+
+
+func _configure_room_walls(room: Node3D, entrances: Array, elevator_side: String) -> void:
+	var structure := room.get_node("Structure") as Node3D
+	for wall_name: String in ["WallNorth", "WallEast", "WallSouth", "WallWest"]:
+		var existing_wall := structure.get_node_or_null(wall_name)
+		if existing_wall != null:
+			existing_wall.free()
+
+	for side: String in ALL_SIDES:
+		var wall: Node3D
+		if entrances.has(side):
+			wall = CENTERED_DOOR_WALL.instantiate() as Node3D
+			wall.name = "Entrance%s" % side.capitalize()
+			if side == elevator_side:
+				var interactive_door := wall.get_node_or_null("InteractiveDoor")
+				if interactive_door != null:
+					interactive_door.free()
+				var navigation_link := wall.get_node_or_null("NavigationLink3D")
+				if navigation_link != null:
+					navigation_link.free()
+		else:
+			wall = ROOM_WALL.instantiate() as Node3D
+			wall.name = "Wall%s" % side.capitalize()
+		structure.add_child(wall)
+		_apply_wall_transform(wall, side)
+
+	_relocate_breaker(room, entrances)
+	if entrances.has(SIDE_SOUTH):
+		var center_locker := room.get_node_or_null("RandomLockerCandidates/Locker03")
+		if center_locker != null:
+			center_locker.free()
+
+
+func _apply_wall_transform(wall: Node3D, side: String) -> void:
+	wall.position.y = ROOM_WALL_HEIGHT
+	match side:
+		SIDE_NORTH:
+			wall.position.z = -ROOM_WALL_OFFSET
+			wall.rotation.y = 0.0
+		SIDE_EAST:
+			wall.position.x = ROOM_WALL_OFFSET
+			wall.rotation.y = -PI * 0.5
+		SIDE_SOUTH:
+			wall.position.z = ROOM_WALL_OFFSET
+			wall.rotation.y = PI
+		SIDE_WEST:
+			wall.position.x = -ROOM_WALL_OFFSET
+			wall.rotation.y = PI * 0.5
+
+
+func _relocate_breaker(room: Node3D, entrances: Array) -> void:
+	var breaker := room.get_node_or_null("Breaker") as Node3D
+	if breaker == null:
+		return
+	var solid_side := SIDE_NORTH
+	for side: String in ALL_SIDES:
+		if not entrances.has(side):
+			solid_side = side
+			break
+	match solid_side:
+		SIDE_NORTH:
+			breaker.position = Vector3(4.8, 2.0, -6.62)
+			breaker.rotation.y = 0.0
+		SIDE_EAST:
 			breaker.position = Vector3(6.62, 2.0, 4.8)
+			breaker.rotation.y = -PI * 0.5
+		SIDE_SOUTH:
+			breaker.position = Vector3(4.8, 2.0, 6.62)
+			breaker.rotation.y = PI
+		SIDE_WEST:
+			breaker.position = Vector3(-6.62, 2.0, 4.8)
 			breaker.rotation.y = PI * 0.5
-		var room_spec: Dictionary = room_specs[target_room_index]
-		var elevator_yaw: float = room_spec["yaw"]
-		var local_door := _rotate_y_2d(Vector2(0.0, 6.87), elevator_yaw)
-		var room_origin: Vector2 = room_spec["origin"]
-		_add_elevator_terminal(elevator_node, room_origin + local_door, elevator_yaw)
-	else:
-		var last_direction := (main_points[-1] - main_points[-2]).normalized()
-		var elevator_yaw := atan2(last_direction.x, last_direction.y)
-		var elevator_door_point := main_points[-1] + last_direction * JUNCTION_HALF_SIZE
-		_add_elevator_terminal(elevator_node, elevator_door_point, elevator_yaw)
-
-	var first_direction := (main_points[1] - main_points[0]).normalized()
-	player_spawn_position = _to_world(main_points[0] + first_direction * 12.0, 0.45)
-	var robot_direction := (main_points[-2] - main_points[-1]).normalized()
-	robot_spawn_position = _to_world(main_points[-2] + robot_direction * 12.0, 0.45)
 
 
-func _add_corridor_edge(
-	parent: Node3D,
-	from: Vector2,
-	to: Vector2,
-	start_trim: float,
-	end_trim: float,
-	edge_name: String,
-) -> void:
+func _add_corridor_edge(parent: Node3D, from: Vector2, to: Vector2, edge_name: String) -> void:
+	var length := from.distance_to(to)
 	var direction := (to - from).normalized()
-	var trimmed_start := from + direction * start_trim
-	var trimmed_end := to - direction * end_trim
-	var available_length := trimmed_start.distance_to(trimmed_end)
-	var module_count := maxi(1, ceili(available_length / CORRIDOR_SOURCE_LENGTH))
-	var module_length := available_length / float(module_count)
-	var yaw := atan2(direction.x, direction.y)
-
-	var edge_root := Node3D.new()
-	edge_root.name = edge_name
-	parent.add_child(edge_root)
-	edge_root.set_meta("centerline_length", from.distance_to(to))
-	edge_root.set_meta("module_count", module_count)
-
-	for module_index: int in range(module_count):
-		var distance_from_start := module_length * (float(module_index) + 0.5)
-		var module_center := trimmed_start + direction * distance_from_start
-		var module := CORRIDOR_MODULE.instantiate() as Node3D
-		module.name = "Module%02d" % (module_index + 1)
-		edge_root.add_child(module)
-		module.position = _to_world(module_center)
-		module.rotation.y = yaw
-		module.call("configure", module_length)
-
-
-func _add_junction(parent: Node3D, point: Vector2, junction_name: String) -> void:
-	var junction := Node3D.new()
-	junction.name = junction_name
-	parent.add_child(junction)
-	junction.position = _to_world(point)
-
-	var floor := FLOOR_SQUARE.instantiate() as Node3D
-	floor.name = "Floor"
-	junction.add_child(floor)
-	floor.scale = Vector3(JUNCTION_SURFACE_SIZE / 14.0, 1.0, JUNCTION_SURFACE_SIZE / 14.0)
-
-	var ceiling := CEILING_SQUARE_WITH_LIGHT.instantiate() as Node3D
-	ceiling.name = "Ceiling"
-	junction.add_child(ceiling)
-	ceiling.position.y = 6.31
-	ceiling.scale = Vector3(JUNCTION_SURFACE_SIZE / 14.0, 1.0, JUNCTION_SURFACE_SIZE / 14.0)
+	var center := from.lerp(to, 0.5)
+	var module := CORRIDOR_MODULE.instantiate() as Node3D
+	module.name = edge_name
+	parent.add_child(module)
+	module.position = _to_world(center)
+	module.rotation.y = _yaw_from_direction(direction)
+	module.call("configure", length)
+	module.set_meta("centerline_length", length)
 
 
 func _add_elevator_terminal(parent: Node3D, door_point: Vector2, yaw: float) -> void:
@@ -444,62 +441,43 @@ func _prune_candidate_group(room: Node, group_name: StringName) -> int:
 	return keep_count
 
 
-func _analyze_turns(points: Array[Vector2]) -> Dictionary:
-	var right_angle_turns := 0
-	var has_diagonal_turn := false
-	for point_index: int in range(1, points.size() - 1):
-		var incoming := (points[point_index] - points[point_index - 1]).normalized()
-		var outgoing := (points[point_index + 1] - points[point_index]).normalized()
-		var turn_degrees := absf(rad_to_deg(acos(clampf(incoming.dot(outgoing), -1.0, 1.0))))
-		if absf(turn_degrees - 90.0) < 0.1:
-			right_angle_turns += 1
-		elif turn_degrees > 0.1:
-			has_diagonal_turn = true
-	return {
-		"right_angle_turns": right_angle_turns,
-		"has_diagonal_turn": has_diagonal_turn,
-	}
+func _find_set(parents: Array[int], value: int) -> int:
+	var root := value
+	while parents[root] != root:
+		root = parents[root]
+	var current := value
+	while parents[current] != current:
+		var next := parents[current]
+		parents[current] = root
+		current = next
+	return root
 
 
-func _direction_from_yaw(yaw: float) -> Vector2:
-	return Vector2(sin(yaw), cos(yaw)).normalized()
+func _union_sets(parents: Array[int], first: int, second: int) -> void:
+	var first_root := _find_set(parents, first)
+	var second_root := _find_set(parents, second)
+	parents[second_root] = first_root
 
 
-func _rotate_y_2d(value: Vector2, yaw: float) -> Vector2:
-	var cosine := cos(yaw)
-	var sine := sin(yaw)
-	return Vector2(
-		cosine * value.x + sine * value.y,
-		-sine * value.x + cosine * value.y
-	)
+func _cell_is_inside_grid(cell: Vector2i) -> bool:
+	return cell.x >= 0 and cell.x < GRID_SIZE and cell.y >= 0 and cell.y < GRID_SIZE
+
+
+func _side_vector(side: String) -> Vector2:
+	return SIDE_VECTORS[side]
+
+
+func _side_grid_offset(side: String) -> Vector2i:
+	var direction := _side_vector(side)
+	return Vector2i(int(direction.x), int(direction.y))
+
+
+func _yaw_from_direction(direction: Vector2) -> float:
+	return atan2(direction.x, direction.y)
 
 
 func _to_world(value: Vector2, height: float = 0.0) -> Vector3:
 	return Vector3(value.x, height, value.y)
-
-
-func _segment_polygon(from: Vector2, to: Vector2, half_width: float) -> PackedVector2Array:
-	var direction := (to - from).normalized()
-	var normal := Vector2(-direction.y, direction.x) * half_width
-	return PackedVector2Array([
-		from + normal,
-		to + normal,
-		to - normal,
-		from - normal,
-	])
-
-
-func _oriented_square_polygon(center: Vector2, half_size: float, yaw: float) -> PackedVector2Array:
-	return PackedVector2Array([
-		center + _rotate_y_2d(Vector2(-half_size, -half_size), yaw),
-		center + _rotate_y_2d(Vector2(half_size, -half_size), yaw),
-		center + _rotate_y_2d(Vector2(half_size, half_size), yaw),
-		center + _rotate_y_2d(Vector2(-half_size, half_size), yaw),
-	])
-
-
-func _polygons_overlap(first: PackedVector2Array, second: PackedVector2Array) -> bool:
-	return not Geometry2D.intersect_polygons(first, second).is_empty()
 
 
 func _shuffle_with_rng(values: Array) -> void:
