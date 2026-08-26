@@ -3,6 +3,7 @@ extends SceneTree
 
 const GENERATOR_SCENE := preload("res://components/map/map_generator.tscn")
 const ROOM_TEMPLATE := preload("res://components/rooms/room_template.tscn")
+const CENTERED_DOOR_WALL := preload("res://components/map/centered_wall_with_door.tscn")
 const ROOM_COUNT := 6
 const MINIMUM_LENGTH := 3.0
 const MAXIMUM_LENGTH := 20.0
@@ -59,6 +60,8 @@ func _run_validation() -> void:
 		failures.append("no loop-producing extra room connection was observed")
 	if not observed_one_entrance or not observed_three_entrances:
 		failures.append("the 1-3 entrance range was not exercised")
+	_validate_door_swing_obstruction_guard(generator, failures)
+	_validate_random_door_generation(generator, failures)
 
 	if not generator.generate_map(20260826):
 		failures.append("full compact scene generation failed")
@@ -102,6 +105,69 @@ func _validate_room_template(failures: Array[String]) -> void:
 	if center_light == null or not center_light.is_in_group("lights"):
 		failures.append("room template floor center light is missing or not switchable")
 	room_template.free()
+
+
+func _validate_door_swing_obstruction_guard(generator: Node, failures: Array[String]) -> void:
+	var room := ROOM_TEMPLATE.instantiate() as Node3D
+	generator.add_child(room)
+	var entrance_wall := CENTERED_DOOR_WALL.instantiate() as Node3D
+	room.get_node("Structure").add_child(entrance_wall)
+	generator.call("_apply_wall_transform", entrance_wall, "north")
+
+	var blocker := StaticBody3D.new()
+	room.add_child(blocker)
+	blocker.position = Vector3(0.0, 1.0, -5.6)
+	var blocker_shape := CollisionShape3D.new()
+	var box_shape := BoxShape3D.new()
+	box_shape.size = Vector3(1.0, 2.0, 1.0)
+	blocker_shape.shape = box_shape
+	blocker.add_child(blocker_shape)
+	if not generator.call("_door_swing_is_blocked", room, entrance_wall):
+		failures.append("door swing obstruction was not detected")
+
+	blocker.position = Vector3(5.0, 1.0, 0.0)
+	if generator.call("_door_swing_is_blocked", room, entrance_wall):
+		failures.append("object outside the door swing was reported as an obstruction")
+	room.free()
+
+
+func _validate_random_door_generation(generator: Node, failures: Array[String]) -> void:
+	var observed_door := false
+	var observed_open_entrance := false
+	var total_doors := 0
+	var total_open_entrances := 0
+	var total_obstructed_candidates := 0
+	for test_seed: int in range(1001, 1011):
+		if not generator.generate_map(test_seed):
+			failures.append("seed %d: random door map generation failed" % test_seed)
+			continue
+		if generator.generated_door_count < 1:
+			failures.append("seed %d: generated map has no doors" % test_seed)
+		var instantiated_doors := generator.get_node("Rooms").find_children(
+			"InteractiveDoor", "AnimatableBody3D", true, false
+		)
+		if instantiated_doors.size() != generator.generated_door_count:
+			failures.append("seed %d: door metadata does not match instantiated doors" % test_seed)
+		for room: Node in generator.get_node("Rooms").get_children():
+			var entrance_count: int = room.get_meta("generated_entrance_count", 0)
+			var door_sides: Array = room.get_meta("generated_door_sides", [])
+			var open_sides: Array = room.get_meta("generated_open_entrance_sides", [])
+			var obstructed_sides: Array = room.get_meta("generated_obstructed_door_sides", [])
+			if door_sides.size() + open_sides.size() != entrance_count:
+				failures.append("%s does not classify every entrance as door or open" % room.name)
+			observed_door = observed_door or not door_sides.is_empty()
+			observed_open_entrance = observed_open_entrance or not open_sides.is_empty()
+			total_doors += door_sides.size()
+			total_open_entrances += open_sides.size()
+			total_obstructed_candidates += obstructed_sides.size()
+	if not observed_door:
+		failures.append("random door generation did not produce a door")
+	if not observed_open_entrance:
+		failures.append("random door generation did not produce an open entrance")
+	print(
+		"Random door sample: doors=%d open=%d obstructed=%d"
+		% [total_doors, total_open_entrances, total_obstructed_candidates]
+	)
 
 
 func _validate_layout(test_seed: int, layout: Dictionary, failures: Array[String]) -> void:
