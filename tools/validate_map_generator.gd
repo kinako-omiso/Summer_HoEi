@@ -3,6 +3,8 @@ extends SceneTree
 
 const GENERATOR_SCENE := preload("res://components/map/map_generator.tscn")
 const ROOM_TEMPLATE := preload("res://components/rooms/room_template.tscn")
+const ROOM_A := preload("res://components/rooms/room_a_office.tscn")
+const ROOM_B := preload("res://components/rooms/room_b_storage.tscn")
 const CENTERED_DOOR_WALL := preload("res://components/map/centered_wall_with_door.tscn")
 const ROOM_COUNT := 6
 const MINIMUM_LENGTH := 3.0
@@ -36,6 +38,8 @@ func _run_validation() -> void:
 		failures.append("room_template.tscn must not be a random generation candidate")
 	_validate_room_template(failures)
 	_validate_centered_door_fit(generator, failures)
+	_validate_authored_breaker_transforms(generator, failures)
+	_validate_authored_wall_preservation(generator, failures)
 
 	for test_seed: int in range(1, 101):
 		var layout: Dictionary = generator.generate_layout_for_seed(test_seed)
@@ -147,6 +151,64 @@ func _validate_centered_door_fit(generator: Node, failures: Array[String]) -> vo
 	if absf(right_bounds.position.x - door_bounds.end.x) > 0.02:
 		failures.append("centered door has a gap at its right edge")
 	wall.free()
+
+
+func _validate_authored_breaker_transforms(generator: Node, failures: Array[String]) -> void:
+	for room_scene: PackedScene in [ROOM_A, ROOM_B]:
+		var room := room_scene.instantiate() as Node3D
+		generator.add_child(room)
+		var breaker := room.get_node("Breaker") as Node3D
+		var authored_transform := breaker.transform
+		var original_side: String = generator.call("_side_from_room_position", breaker.position)
+		var non_conflicting_side := "north" if original_side != "north" else "east"
+		generator.call("_relocate_breaker", room, [non_conflicting_side])
+		if not breaker.transform.is_equal_approx(authored_transform):
+			failures.append("%s authored breaker Transform was overwritten without a wall conflict" % room.name)
+		room.free()
+
+		var moved_room := room_scene.instantiate() as Node3D
+		generator.add_child(moved_room)
+		var moved_breaker := moved_room.get_node("Breaker") as Node3D
+		var original_yaw := moved_breaker.rotation.y
+		var original_height := moved_breaker.position.y
+		var original_canonical_yaw: float = generator.call("_canonical_breaker_yaw", original_side)
+		generator.call("_relocate_breaker", moved_room, [original_side])
+		var moved_side: String = generator.call("_side_from_room_position", moved_breaker.position)
+		var moved_canonical_yaw: float = generator.call("_canonical_breaker_yaw", moved_side)
+		var original_offset := wrapf(original_yaw - original_canonical_yaw, -PI, PI)
+		var moved_offset := wrapf(moved_breaker.rotation.y - moved_canonical_yaw, -PI, PI)
+		if absf(angle_difference(original_offset, moved_offset)) > 0.001:
+			failures.append("%s breaker authored orientation was lost during required relocation" % moved_room.name)
+		if not is_equal_approx(moved_breaker.position.y, original_height):
+			failures.append("%s breaker authored height was lost during required relocation" % moved_room.name)
+		moved_room.free()
+
+
+func _validate_authored_wall_preservation(generator: Node, failures: Array[String]) -> void:
+	var room := ROOM_A.instantiate() as Node3D
+	generator.add_child(room)
+	var authored_wall := room.get_node("Structure/WallEast") as Node3D
+	var authored_transform := authored_wall.transform
+	var authored_instance_id := authored_wall.get_instance_id()
+	var custom_child := Node3D.new()
+	custom_child.name = "AuthorSavedWallChild"
+	authored_wall.add_child(custom_child)
+	generator.call("_configure_room_walls", room, ["north"], "")
+	var generated_wall := room.get_node_or_null("Structure/WallEast") as Node3D
+	if generated_wall == null or generated_wall.get_instance_id() != authored_instance_id:
+		failures.append("solid authored wall was replaced during map generation")
+	elif not generated_wall.transform.is_equal_approx(authored_transform):
+		failures.append("solid authored wall Transform was overwritten during map generation")
+	elif generated_wall.get_node_or_null("AuthorSavedWallChild") == null:
+		failures.append("solid authored wall custom children were discarded")
+	room.free()
+
+	var template_room := ROOM_TEMPLATE.instantiate() as Node3D
+	generator.add_child(template_room)
+	generator.call("_configure_room_walls", template_room, ["east"], "")
+	if template_room.get_node_or_null("Structure/WallNorth") == null:
+		failures.append("missing authored wall was not filled when generated as solid")
+	template_room.free()
 
 
 func _collision_bounds_in_wall_space(wall: Node3D, path: String) -> AABB:
