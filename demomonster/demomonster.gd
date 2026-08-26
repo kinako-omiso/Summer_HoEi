@@ -22,6 +22,7 @@ extends CharacterBody3D
 # Playerがインタラクションした場所を検知する距離
 # Inspectorから変更可能
 @export var interaction_detection_distance: float = 30.0
+@export var interaction_detection_boost: float = 1.5
 
 # Playerを最後に視認・インタラクション検知してから
 # 強制的にPlayerの位置を取得するまでの時間
@@ -507,6 +508,9 @@ func _physics_process(delta: float) -> void:
 			var dir := diff.normalized()
 
 			var target_velocity := dir * speed
+
+			if state != State.CHASE:
+				target_velocity *= interaction_detection_boost
 
 			velocity.x = move_toward(
 				velocity.x,

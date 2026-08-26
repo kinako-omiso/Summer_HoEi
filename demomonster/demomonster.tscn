@@ -11,6 +11,7 @@ height = 2.8276367
 collision_layer = 2
 collision_mask = 13
 script = ExtResource("1_3wso1")
+interaction_detection_distance = 45.0
 
 [node name="pivod" type="Node3D" parent="." unique_id=213938137]
 
