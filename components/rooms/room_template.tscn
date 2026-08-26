@@ -1,0 +1,42 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="PackedScene" uid="uid://bugvnu7o8jwuk" path="res://assets/3DModel/floor_square.glb" id="1_floor_model"]
+[ext_resource type="Script" uid="uid://bafdgvvgwfh61" path="res://world_surface.gd" id="2_surface"]
+[ext_resource type="PackedScene" uid="uid://cm1jwh0mcnaon" path="res://assets/3DModel/ceiling_square_with_light.tscn" id="3_ceiling"]
+[ext_resource type="PackedScene" path="res://assets/3DModel/wall_no_door.tscn" id="4_wall"]
+
+[sub_resource type="BoxShape3D" id="BoxShape_floor"]
+size = Vector3(14, 0.3, 14)
+
+[node name="RoomTemplate" type="Node3D"]
+
+[node name="Structure" type="Node3D" parent="."]
+
+[node name="Floor" type="StaticBody3D" parent="Structure"]
+collision_layer = 4
+collision_mask = 0
+script = ExtResource("2_surface")
+
+[node name="Model" parent="Structure/Floor" instance=ExtResource("1_floor_model")]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Structure/Floor"]
+shape = SubResource("BoxShape_floor")
+
+[node name="CenterLight" type="OmniLight3D" parent="Structure/Floor" groups=["lights"]]
+position = Vector3(0, 0.35, 0)
+layers = 4
+light_energy = 0.8
+omni_range = 12.0
+shadow_enabled = false
+
+[node name="Ceiling" parent="Structure" instance=ExtResource("3_ceiling")]
+position = Vector3(0, 6.31, 0)
+
+[node name="WallEast" parent="Structure" instance=ExtResource("4_wall")]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 6.87, 3.15, 0)
+
+[node name="WallSouth" parent="Structure" instance=ExtResource("4_wall")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 3.15, 6.87)
+
+[node name="WallWest" parent="Structure" instance=ExtResource("4_wall")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -6.87, 3.15, 0)
