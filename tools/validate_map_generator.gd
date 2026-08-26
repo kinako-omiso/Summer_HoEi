@@ -3,6 +3,9 @@ extends SceneTree
 
 const GENERATOR_SCENE := preload("res://components/map/map_generator.tscn")
 const ROOM_TEMPLATE := preload("res://components/rooms/room_template.tscn")
+const ROOM_A := preload("res://components/rooms/room_a_office.tscn")
+const ROOM_B := preload("res://components/rooms/room_b_storage.tscn")
+const CENTERED_DOOR_WALL := preload("res://components/map/centered_wall_with_door.tscn")
 const ROOM_COUNT := 6
 const MINIMUM_LENGTH := 3.0
 const MAXIMUM_LENGTH := 20.0
@@ -34,6 +37,9 @@ func _run_validation() -> void:
 	if available_room_scenes.has("res://components/rooms/room_template.tscn"):
 		failures.append("room_template.tscn must not be a random generation candidate")
 	_validate_room_template(failures)
+	_validate_centered_door_fit(generator, failures)
+	_validate_authored_breaker_transforms(generator, failures)
+	_validate_authored_wall_preservation(generator, failures)
 
 	for test_seed: int in range(1, 101):
 		var layout: Dictionary = generator.generate_layout_for_seed(test_seed)
@@ -59,6 +65,8 @@ func _run_validation() -> void:
 		failures.append("no loop-producing extra room connection was observed")
 	if not observed_one_entrance or not observed_three_entrances:
 		failures.append("the 1-3 entrance range was not exercised")
+	_validate_door_swing_obstruction_guard(generator, failures)
+	_validate_random_door_generation(generator, failures)
 
 	if not generator.generate_map(20260826):
 		failures.append("full compact scene generation failed")
@@ -102,6 +110,150 @@ func _validate_room_template(failures: Array[String]) -> void:
 	if center_light == null or not center_light.is_in_group("lights"):
 		failures.append("room template floor center light is missing or not switchable")
 	room_template.free()
+
+
+func _validate_door_swing_obstruction_guard(generator: Node, failures: Array[String]) -> void:
+	var room := ROOM_TEMPLATE.instantiate() as Node3D
+	generator.add_child(room)
+	var entrance_wall := CENTERED_DOOR_WALL.instantiate() as Node3D
+	room.get_node("Structure").add_child(entrance_wall)
+	generator.call("_apply_wall_transform", entrance_wall, "north")
+
+	var blocker := StaticBody3D.new()
+	room.add_child(blocker)
+	blocker.position = Vector3(0.0, 1.0, -5.6)
+	var blocker_shape := CollisionShape3D.new()
+	var box_shape := BoxShape3D.new()
+	box_shape.size = Vector3(1.0, 2.0, 1.0)
+	blocker_shape.shape = box_shape
+	blocker.add_child(blocker_shape)
+	if not generator.call("_door_swing_is_blocked", room, entrance_wall):
+		failures.append("door swing obstruction was not detected")
+
+	blocker.position = Vector3(5.0, 1.0, 0.0)
+	if generator.call("_door_swing_is_blocked", room, entrance_wall):
+		failures.append("object outside the door swing was reported as an obstruction")
+	room.free()
+
+
+func _validate_centered_door_fit(generator: Node, failures: Array[String]) -> void:
+	var wall := CENTERED_DOOR_WALL.instantiate() as Node3D
+	generator.add_child(wall)
+	var door := wall.get_node("InteractiveDoor") as AnimatableBody3D
+	var door_bounds := AABB()
+	for mesh: MeshInstance3D in door.find_children("*", "MeshInstance3D", true, false):
+		var wall_space_bounds := wall.global_transform.affine_inverse() * mesh.global_transform * mesh.get_aabb()
+		door_bounds = wall_space_bounds if door_bounds.size == Vector3.ZERO else door_bounds.merge(wall_space_bounds)
+	var left_bounds := _collision_bounds_in_wall_space(wall, "WallLeft/CollisionShape3D")
+	var right_bounds := _collision_bounds_in_wall_space(wall, "WallRight/CollisionShape3D")
+	if absf(left_bounds.end.x - door_bounds.position.x) > 0.02:
+		failures.append("centered door has a gap at its left edge")
+	if absf(right_bounds.position.x - door_bounds.end.x) > 0.02:
+		failures.append("centered door has a gap at its right edge")
+	wall.free()
+
+
+func _validate_authored_breaker_transforms(generator: Node, failures: Array[String]) -> void:
+	for room_scene: PackedScene in [ROOM_A, ROOM_B]:
+		var room := room_scene.instantiate() as Node3D
+		generator.add_child(room)
+		var breaker := room.get_node("Breaker") as Node3D
+		var authored_transform := breaker.transform
+		var original_side: String = generator.call("_side_from_room_position", breaker.position)
+		var non_conflicting_side := "north" if original_side != "north" else "east"
+		generator.call("_relocate_breaker", room, [non_conflicting_side])
+		if not breaker.transform.is_equal_approx(authored_transform):
+			failures.append("%s authored breaker Transform was overwritten without a wall conflict" % room.name)
+		room.free()
+
+		var moved_room := room_scene.instantiate() as Node3D
+		generator.add_child(moved_room)
+		var moved_breaker := moved_room.get_node("Breaker") as Node3D
+		var original_yaw := moved_breaker.rotation.y
+		var original_height := moved_breaker.position.y
+		var original_canonical_yaw: float = generator.call("_canonical_breaker_yaw", original_side)
+		generator.call("_relocate_breaker", moved_room, [original_side])
+		var moved_side: String = generator.call("_side_from_room_position", moved_breaker.position)
+		var moved_canonical_yaw: float = generator.call("_canonical_breaker_yaw", moved_side)
+		var original_offset := wrapf(original_yaw - original_canonical_yaw, -PI, PI)
+		var moved_offset := wrapf(moved_breaker.rotation.y - moved_canonical_yaw, -PI, PI)
+		if absf(angle_difference(original_offset, moved_offset)) > 0.001:
+			failures.append("%s breaker authored orientation was lost during required relocation" % moved_room.name)
+		if not is_equal_approx(moved_breaker.position.y, original_height):
+			failures.append("%s breaker authored height was lost during required relocation" % moved_room.name)
+		moved_room.free()
+
+
+func _validate_authored_wall_preservation(generator: Node, failures: Array[String]) -> void:
+	var room := ROOM_A.instantiate() as Node3D
+	generator.add_child(room)
+	var authored_wall := room.get_node("Structure/WallEast") as Node3D
+	var authored_transform := authored_wall.transform
+	var authored_instance_id := authored_wall.get_instance_id()
+	var custom_child := Node3D.new()
+	custom_child.name = "AuthorSavedWallChild"
+	authored_wall.add_child(custom_child)
+	generator.call("_configure_room_walls", room, ["north"], "")
+	var generated_wall := room.get_node_or_null("Structure/WallEast") as Node3D
+	if generated_wall == null or generated_wall.get_instance_id() != authored_instance_id:
+		failures.append("solid authored wall was replaced during map generation")
+	elif not generated_wall.transform.is_equal_approx(authored_transform):
+		failures.append("solid authored wall Transform was overwritten during map generation")
+	elif generated_wall.get_node_or_null("AuthorSavedWallChild") == null:
+		failures.append("solid authored wall custom children were discarded")
+	room.free()
+
+	var template_room := ROOM_TEMPLATE.instantiate() as Node3D
+	generator.add_child(template_room)
+	generator.call("_configure_room_walls", template_room, ["east"], "")
+	if template_room.get_node_or_null("Structure/WallNorth") == null:
+		failures.append("missing authored wall was not filled when generated as solid")
+	template_room.free()
+
+
+func _collision_bounds_in_wall_space(wall: Node3D, path: String) -> AABB:
+	var collision_shape := wall.get_node(path) as CollisionShape3D
+	var shape_to_wall := wall.global_transform.affine_inverse() * collision_shape.global_transform
+	return shape_to_wall * collision_shape.shape.get_debug_mesh().get_aabb()
+
+
+func _validate_random_door_generation(generator: Node, failures: Array[String]) -> void:
+	var observed_door := false
+	var observed_open_entrance := false
+	var total_doors := 0
+	var total_open_entrances := 0
+	var total_obstructed_candidates := 0
+	for test_seed: int in range(1001, 1011):
+		if not generator.generate_map(test_seed):
+			failures.append("seed %d: random door map generation failed" % test_seed)
+			continue
+		if generator.generated_door_count < 1:
+			failures.append("seed %d: generated map has no doors" % test_seed)
+		var instantiated_doors := generator.get_node("Rooms").find_children(
+			"InteractiveDoor", "AnimatableBody3D", true, false
+		)
+		if instantiated_doors.size() != generator.generated_door_count:
+			failures.append("seed %d: door metadata does not match instantiated doors" % test_seed)
+		for room: Node in generator.get_node("Rooms").get_children():
+			var entrance_count: int = room.get_meta("generated_entrance_count", 0)
+			var door_sides: Array = room.get_meta("generated_door_sides", [])
+			var open_sides: Array = room.get_meta("generated_open_entrance_sides", [])
+			var obstructed_sides: Array = room.get_meta("generated_obstructed_door_sides", [])
+			if door_sides.size() + open_sides.size() != entrance_count:
+				failures.append("%s does not classify every entrance as door or open" % room.name)
+			observed_door = observed_door or not door_sides.is_empty()
+			observed_open_entrance = observed_open_entrance or not open_sides.is_empty()
+			total_doors += door_sides.size()
+			total_open_entrances += open_sides.size()
+			total_obstructed_candidates += obstructed_sides.size()
+	if not observed_door:
+		failures.append("random door generation did not produce a door")
+	if not observed_open_entrance:
+		failures.append("random door generation did not produce an open entrance")
+	print(
+		"Random door sample: doors=%d open=%d obstructed=%d"
+		% [total_doors, total_open_entrances, total_obstructed_candidates]
+	)
 
 
 func _validate_layout(test_seed: int, layout: Dictionary, failures: Array[String]) -> void:

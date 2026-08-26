@@ -51,6 +51,7 @@ func _validate_ready_map() -> void:
 	var rooms := generator.get_node("Rooms")
 	var corridors := generator.get_node("Corridors")
 	_validate_debug_lighting(failures)
+	_validate_visible_doors(generator, player, failures)
 	if not corridors.find_children("*", "Light3D", true, false).is_empty():
 		failures.append("generated corridors still contain gameplay lights")
 	if navigation_region.navigation_mesh.get_polygon_count() <= 0:
@@ -116,3 +117,30 @@ func _validate_debug_lighting(failures: Array[String]) -> void:
 		failures.append("debug ambient lighting did not restore its original energy")
 	if not is_equal_approx(environment.background_energy_multiplier, original_background_energy):
 		failures.append("debug background lighting did not restore its original energy")
+
+
+func _validate_visible_doors(generator: Node, player: CharacterBody3D, failures: Array[String]) -> void:
+	var doors := generator.get_node("Rooms").find_children(
+		"InteractiveDoor", "AnimatableBody3D", true, false
+	)
+	if doors.size() != generator.generated_door_count:
+		failures.append("runtime visible door count does not match generator metadata")
+	var camera := player.get_node("PlayerCamera") as Camera3D
+	for door: AnimatableBody3D in doors:
+		var entrance_wall := door.get_parent() as Node3D
+		var expected_position := entrance_wall.global_transform * door.position
+		if door.global_position.distance_to(expected_position) > 0.01:
+			failures.append("%s did not inherit its entrance wall transform" % door.get_path())
+		if door.global_position.y < 0.0:
+			failures.append("%s remained below the room floor" % door.get_path())
+		var visible_meshes := 0
+		var combined_bounds := AABB()
+		for mesh: MeshInstance3D in door.find_children("*", "MeshInstance3D", true, false):
+			if mesh.visible and mesh.layers & camera.cull_mask != 0:
+				visible_meshes += 1
+				var world_bounds := mesh.global_transform * mesh.get_aabb()
+				combined_bounds = world_bounds if combined_bounds.size == Vector3.ZERO else combined_bounds.merge(world_bounds)
+		if visible_meshes == 0:
+			failures.append("%s has no mesh visible to PlayerCamera" % door.get_path())
+		elif combined_bounds.size.length() < 0.1:
+			failures.append("%s has an empty visual AABB" % door.get_path())

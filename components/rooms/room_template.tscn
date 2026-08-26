@@ -1,4 +1,4 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene format=3 uid="uid://cr28g4pbur7mf"]
 
 [ext_resource type="PackedScene" uid="uid://bugvnu7o8jwuk" path="res://assets/3DModel/floor_square.glb" id="1_floor_model"]
 [ext_resource type="Script" uid="uid://bafdgvvgwfh61" path="res://world_surface.gd" id="2_surface"]
@@ -8,35 +8,34 @@
 [sub_resource type="BoxShape3D" id="BoxShape_floor"]
 size = Vector3(14, 0.3, 14)
 
-[node name="RoomTemplate" type="Node3D"]
+[node name="RoomTemplate" type="Node3D" unique_id=1092436475]
 
-[node name="Structure" type="Node3D" parent="."]
+[node name="Structure" type="Node3D" parent="." unique_id=38094176]
 
-[node name="Floor" type="StaticBody3D" parent="Structure"]
+[node name="Floor" type="StaticBody3D" parent="Structure" unique_id=579625886]
 collision_layer = 4
 collision_mask = 0
 script = ExtResource("2_surface")
 
-[node name="Model" parent="Structure/Floor" instance=ExtResource("1_floor_model")]
+[node name="Model" parent="Structure/Floor" unique_id=437328803 instance=ExtResource("1_floor_model")]
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Structure/Floor"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Structure/Floor" unique_id=2113872832]
 shape = SubResource("BoxShape_floor")
 
-[node name="CenterLight" type="OmniLight3D" parent="Structure/Floor" groups=["lights"]]
-position = Vector3(0, 0.35, 0)
+[node name="CenterLight" type="OmniLight3D" parent="Structure/Floor" unique_id=620121547 groups=["lights"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.35, 0)
 layers = 4
 light_energy = 0.8
 omni_range = 12.0
-shadow_enabled = false
 
-[node name="Ceiling" parent="Structure" instance=ExtResource("3_ceiling")]
-position = Vector3(0, 6.31, 0)
+[node name="Ceiling" parent="Structure" unique_id=709384218 instance=ExtResource("3_ceiling")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.31, 0)
 
-[node name="WallEast" parent="Structure" instance=ExtResource("4_wall")]
+[node name="WallEast" parent="Structure" unique_id=1943295376 instance=ExtResource("4_wall")]
 transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 6.87, 3.15, 0)
 
-[node name="WallSouth" parent="Structure" instance=ExtResource("4_wall")]
+[node name="WallSouth" parent="Structure" unique_id=1434321341 instance=ExtResource("4_wall")]
 transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 3.15, 6.87)
 
-[node name="WallWest" parent="Structure" instance=ExtResource("4_wall")]
+[node name="WallWest" parent="Structure" unique_id=565030952 instance=ExtResource("4_wall")]
 transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -6.87, 3.15, 0)

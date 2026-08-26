@@ -11,6 +11,10 @@ const ROOM_WALL_OFFSET := 6.87
 const ROOM_WALL_HEIGHT := 3.15
 const CORRIDOR_SOURCE_LENGTH := 28.0
 const MAX_LAYOUT_ATTEMPTS := 160
+const DOOR_SWING_CLEARANCE := AABB(
+	Vector3(-1.4, -3.2, -0.35),
+	Vector3(2.8, 4.6, 2.9)
+)
 
 const SIDE_NORTH := "north"
 const SIDE_EAST := "east"
@@ -33,15 +37,18 @@ const ELEVATOR_DOOR := preload("res://assets/3DModel/elevator_door.tscn")
 @export_range(3.0, 20.0, 0.5) var minimum_corridor_length := 3.0
 @export_range(3.0, 20.0, 0.5) var maximum_corridor_length := 20.0
 @export_range(0.0, 1.0, 0.05) var extra_connection_chance := 0.45
+@export_range(0.0, 1.0, 0.05) var door_spawn_chance := 0.5
 @export var seed_override: int = 0
 
 var generated_seed: int = 0
+var generated_door_count: int = 0
 var player_spawn_position := Vector3.ZERO
 var robot_spawn_position := Vector3.ZERO
 var last_layout: Dictionary = {}
 
 var _rng := RandomNumberGenerator.new()
 var _room_scene_paths: Array[String] = []
+var _room_scenes_by_path: Dictionary = {}
 
 
 func generate_map(requested_seed: int = 0) -> bool:
@@ -81,6 +88,7 @@ func _clear_generated_map() -> void:
 	for child: Node in get_children():
 		child.free()
 	last_layout = {}
+	generated_door_count = 0
 
 
 func _build_valid_layout() -> Dictionary:
@@ -304,7 +312,7 @@ func _instantiate_layout(layout: Dictionary) -> void:
 	var room_specs: Array = layout["rooms"]
 	for room_index: int in range(room_specs.size()):
 		var room_spec: Dictionary = room_specs[room_index]
-		var room_scene: PackedScene = load(room_spec["scene_path"]) as PackedScene
+		var room_scene: PackedScene = _room_scenes_by_path[room_spec["scene_path"]] as PackedScene
 		var room := room_scene.instantiate() as Node3D
 		room.name = "Room%02d_%s" % [room_index + 1, room_spec["scene_id"]]
 		rooms_root.add_child(room)
@@ -312,19 +320,25 @@ func _instantiate_layout(layout: Dictionary) -> void:
 		room.position = _to_world(origin)
 		var entrances: Array = room_spec["entrances"]
 		var elevator_side: String = room_spec["elevator_side"]
-		_configure_room_walls(room, entrances, elevator_side)
-		room.set_meta("generated_room_type", room_spec["type"])
-		room.set_meta("generated_room_scene", room_spec["scene_path"])
-		room.set_meta("generated_entrance_count", entrances.size())
-		room.set_meta("generated_entrance_sides", entrances.duplicate())
-
+		_remove_fixed_entrance_obstructions(room, entrances)
 		var candidate_counts := {
 			"desks": _prune_candidate_group(room, &"random_desk_monitor_candidates"),
 			"plants": _prune_candidate_group(room, &"random_plant_candidates"),
 			"lockers": _prune_candidate_group(room, &"random_locker_candidates"),
 		}
+		var door_report := _configure_room_walls(room, entrances, elevator_side)
+		room.set_meta("generated_room_type", room_spec["type"])
+		room.set_meta("generated_room_scene", room_spec["scene_path"])
+		room.set_meta("generated_entrance_count", entrances.size())
+		room.set_meta("generated_entrance_sides", entrances.duplicate())
 		room.set_meta("generated_candidate_counts", candidate_counts)
+		room.set_meta("generated_door_sides", door_report["doors"])
+		room.set_meta("generated_open_entrance_sides", door_report["open"])
+		room.set_meta("generated_obstructed_door_sides", door_report["obstructed"])
 		room_instances.append(room)
+
+	_ensure_at_least_one_generated_door(room_instances, room_specs)
+	generated_door_count = _count_generated_doors(room_instances)
 
 	var elevator_room_index: int = layout["elevator_room_index"]
 	var elevator_side: String = layout["elevator_side"]
@@ -337,36 +351,139 @@ func _instantiate_layout(layout: Dictionary) -> void:
 	robot_spawn_position = room_instances[-1].global_position + Vector3(0.0, 0.45, 0.0)
 
 
-func _configure_room_walls(room: Node3D, entrances: Array, elevator_side: String) -> void:
+func _configure_room_walls(room: Node3D, entrances: Array, elevator_side: String) -> Dictionary:
 	var structure := room.get_node("Structure") as Node3D
-	for wall_name: String in ["WallNorth", "WallEast", "WallSouth", "WallWest"]:
-		var existing_wall := structure.get_node_or_null(wall_name)
-		if existing_wall != null:
-			existing_wall.free()
+	var door_sides: Array[String] = []
+	var open_sides: Array[String] = []
+	var obstructed_sides: Array[String] = []
 
 	for side: String in ALL_SIDES:
-		var wall: Node3D
+		var authored_wall_name := "Wall%s" % side.capitalize()
+		var authored_wall := structure.get_node_or_null(authored_wall_name) as Node3D
+		var wall: Node3D = null
 		if entrances.has(side):
+			# Only an entrance side must replace authored content. Solid walls keep
+			# every saved transform, material override, and custom child node.
+			if authored_wall != null:
+				authored_wall.free()
 			wall = CENTERED_DOOR_WALL.instantiate() as Node3D
 			wall.name = "Entrance%s" % side.capitalize()
-			if side == elevator_side:
-				var interactive_door := wall.get_node_or_null("InteractiveDoor")
-				if interactive_door != null:
-					interactive_door.free()
-				var navigation_link := wall.get_node_or_null("NavigationLink3D")
-				if navigation_link != null:
-					navigation_link.free()
-		else:
+		elif authored_wall == null:
+			# Templates may intentionally omit one side. Fill it only when the
+			# generated layout needs that side to be solid.
 			wall = ROOM_WALL.instantiate() as Node3D
-			wall.name = "Wall%s" % side.capitalize()
-		structure.add_child(wall)
+			wall.name = authored_wall_name
+		if wall == null:
+			continue
 		_apply_wall_transform(wall, side)
+		# AnimatableBody3D children synchronize their global transform when they
+		# enter the tree. Set the wall transform first so doors do not remain at
+		# the room origin (and below the floor) when the wall is moved afterward.
+		structure.add_child(wall)
+		if not entrances.has(side):
+			continue
+		if side == elevator_side:
+			_remove_door_from_entrance(wall)
+			open_sides.append(side)
+			continue
+		var swing_is_blocked := _door_swing_is_blocked(room, wall)
+		if swing_is_blocked or _rng.randf() > door_spawn_chance:
+			_remove_door_from_entrance(wall)
+			open_sides.append(side)
+			if swing_is_blocked:
+				obstructed_sides.append(side)
+		else:
+			door_sides.append(side)
 
-	_relocate_breaker(room, entrances)
+	return {
+		"doors": door_sides,
+		"open": open_sides,
+		"obstructed": obstructed_sides,
+	}
+
+
+func _remove_fixed_entrance_obstructions(room: Node3D, entrances: Array) -> void:
 	if entrances.has(SIDE_SOUTH):
 		var center_locker := room.get_node_or_null("RandomLockerCandidates/Locker03")
 		if center_locker != null:
 			center_locker.free()
+	_relocate_breaker(room, entrances)
+
+
+func _remove_door_from_entrance(wall: Node3D) -> void:
+	var interactive_door := wall.get_node_or_null("InteractiveDoor")
+	if interactive_door != null:
+		interactive_door.free()
+	var navigation_link := wall.get_node_or_null("NavigationLink3D")
+	if navigation_link != null:
+		navigation_link.free()
+
+
+func _ensure_at_least_one_generated_door(
+	room_instances: Array[Node3D],
+	room_specs: Array,
+) -> void:
+	if _count_generated_doors(room_instances) > 0:
+		return
+
+	var safe_candidates: Array[Dictionary] = []
+	for room_index: int in range(room_instances.size()):
+		var room := room_instances[room_index]
+		var open_sides: Array = room.get_meta("generated_open_entrance_sides", [])
+		var obstructed_sides: Array = room.get_meta("generated_obstructed_door_sides", [])
+		var elevator_side: String = room_specs[room_index]["elevator_side"]
+		for side: String in open_sides:
+			if side != elevator_side and not obstructed_sides.has(side):
+				safe_candidates.append({"room": room, "side": side})
+	if safe_candidates.is_empty():
+		return
+
+	var selected: Dictionary = safe_candidates[_rng.randi_range(0, safe_candidates.size() - 1)]
+	var room: Node3D = selected["room"]
+	var side: String = selected["side"]
+	var structure := room.get_node("Structure") as Node3D
+	var entrance_name := "Entrance%s" % side.capitalize()
+	var open_wall := structure.get_node_or_null(entrance_name)
+	if open_wall != null:
+		open_wall.free()
+	var door_wall := CENTERED_DOOR_WALL.instantiate() as Node3D
+	door_wall.name = entrance_name
+	_apply_wall_transform(door_wall, side)
+	structure.add_child(door_wall)
+
+	var open_sides: Array = room.get_meta("generated_open_entrance_sides", [])
+	var door_sides: Array = room.get_meta("generated_door_sides", [])
+	open_sides.erase(side)
+	door_sides.append(side)
+	room.set_meta("generated_open_entrance_sides", open_sides)
+	room.set_meta("generated_door_sides", door_sides)
+	room.set_meta("generated_minimum_door_fallback", true)
+
+
+func _count_generated_doors(room_instances: Array[Node3D]) -> int:
+	var door_count := 0
+	for room: Node3D in room_instances:
+		var door_sides: Array = room.get_meta("generated_door_sides", [])
+		door_count += door_sides.size()
+	return door_count
+
+
+func _door_swing_is_blocked(room: Node3D, entrance_wall: Node3D) -> bool:
+	var structure := room.get_node("Structure")
+	for node: Node in room.find_children("*", "CollisionShape3D", true, false):
+		var collision_shape := node as CollisionShape3D
+		if collision_shape == null or collision_shape.disabled or collision_shape.shape == null:
+			continue
+		if structure.is_ancestor_of(collision_shape):
+			continue
+		var debug_mesh := collision_shape.shape.get_debug_mesh()
+		if debug_mesh == null:
+			continue
+		var shape_to_wall := entrance_wall.global_transform.affine_inverse() * collision_shape.global_transform
+		var wall_space_bounds: AABB = shape_to_wall * debug_mesh.get_aabb()
+		if DOOR_SWING_CLEARANCE.intersects(wall_space_bounds):
+			return true
+	return false
 
 
 func _apply_wall_transform(wall: Node3D, side: String) -> void:
@@ -390,24 +507,45 @@ func _relocate_breaker(room: Node3D, entrances: Array) -> void:
 	var breaker := room.get_node_or_null("Breaker") as Node3D
 	if breaker == null:
 		return
+	var original_side := _side_from_room_position(breaker.position)
+	# Preserve the room author's complete Transform when its mounting wall is
+	# still solid. Previously every generated room overwrote the authored yaw.
+	if not entrances.has(original_side):
+		return
 	var solid_side := SIDE_NORTH
 	for side: String in ALL_SIDES:
 		if not entrances.has(side):
 			solid_side = side
 			break
+	var preserved_y := breaker.position.y
+	var yaw_delta := _canonical_breaker_yaw(solid_side) - _canonical_breaker_yaw(original_side)
 	match solid_side:
 		SIDE_NORTH:
-			breaker.position = Vector3(4.8, 2.0, -6.62)
-			breaker.rotation.y = 0.0
+			breaker.position = Vector3(4.8, preserved_y, -6.62)
 		SIDE_EAST:
-			breaker.position = Vector3(6.62, 2.0, 4.8)
-			breaker.rotation.y = -PI * 0.5
+			breaker.position = Vector3(6.62, preserved_y, 4.8)
 		SIDE_SOUTH:
-			breaker.position = Vector3(4.8, 2.0, 6.62)
-			breaker.rotation.y = PI
+			breaker.position = Vector3(4.8, preserved_y, 6.62)
 		SIDE_WEST:
-			breaker.position = Vector3(-6.62, 2.0, 4.8)
-			breaker.rotation.y = PI * 0.5
+			breaker.position = Vector3(-6.62, preserved_y, 4.8)
+	breaker.rotation.y = wrapf(breaker.rotation.y + yaw_delta, -PI, PI)
+
+
+func _side_from_room_position(position: Vector3) -> String:
+	if absf(position.x) > absf(position.z):
+		return SIDE_EAST if position.x >= 0.0 else SIDE_WEST
+	return SIDE_SOUTH if position.z >= 0.0 else SIDE_NORTH
+
+
+func _canonical_breaker_yaw(side: String) -> float:
+	match side:
+		SIDE_EAST:
+			return -PI * 0.5
+		SIDE_SOUTH:
+			return PI
+		SIDE_WEST:
+			return PI * 0.5
+	return 0.0
 
 
 func _add_corridor_edge(parent: Node3D, from: Vector2, to: Vector2, edge_name: String) -> void:
@@ -470,6 +608,7 @@ func get_available_room_scene_paths() -> Array[String]:
 
 func _refresh_room_scene_paths() -> bool:
 	_room_scene_paths.clear()
+	_room_scenes_by_path.clear()
 	var directory: DirAccess = DirAccess.open(ROOM_SCENE_DIRECTORY)
 	if directory == null:
 		push_error("MapGenerator cannot open %s." % ROOM_SCENE_DIRECTORY)
@@ -481,7 +620,14 @@ func _refresh_room_scene_paths() -> bool:
 		if not _is_room_scene_filename(filename):
 			continue
 		var scene_path := "%s/%s" % [ROOM_SCENE_DIRECTORY, filename]
-		var resource: Resource = load(scene_path)
+		# Reload the saved scene and all of its external dependencies for every
+		# map generation. This bypasses stale ResourceLoader cache entries during
+		# an editor play session without requiring a project restart.
+		var resource: Resource = ResourceLoader.load(
+			scene_path,
+			"PackedScene",
+			ResourceLoader.CACHE_MODE_REPLACE_DEEP
+		)
 		if not resource is PackedScene:
 			push_warning("Skipping room scene that cannot be loaded: %s" % scene_path)
 			continue
@@ -492,6 +638,7 @@ func _refresh_room_scene_paths() -> bool:
 			push_warning("Skipping room scene without a Node3D root and Structure child: %s" % scene_path)
 			continue
 		_room_scene_paths.append(scene_path)
+		_room_scenes_by_path[scene_path] = resource as PackedScene
 
 	if _room_scene_paths.is_empty():
 		push_error(

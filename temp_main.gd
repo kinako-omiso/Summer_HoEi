@@ -63,8 +63,12 @@ func _ready() -> void:
 	is_runtime_map_ready = true
 	runtime_map_ready.emit(map_generator.generated_seed)
 	print(
-		"Runtime map ready. seed=%d nav_polygons=%d"
-		% [map_generator.generated_seed, navigation_region.navigation_mesh.get_polygon_count()]
+		"Runtime map ready. seed=%d doors=%d nav_polygons=%d"
+		% [
+			map_generator.generated_seed,
+			map_generator.generated_door_count,
+			navigation_region.navigation_mesh.get_polygon_count(),
+		]
 	)
 
 

@@ -6,16 +6,16 @@
 [node name="CenteredWallWithDoor" type="Node3D"]
 
 [node name="WallLeft" parent="." instance=ExtResource("1_wall")]
-position = Vector3(-4.05, 0, 0)
-scale = Vector3(0.421429, 1, 1)
+position = Vector3(-4, 0, 0)
+scale = Vector3(0.428571, 1, 1)
 
 [node name="WallRight" parent="." instance=ExtResource("1_wall")]
-position = Vector3(4.05, 0, 0)
-scale = Vector3(0.421429, 1, 1)
+position = Vector3(4, 0, 0)
+scale = Vector3(0.428571, 1, 1)
 
 [node name="WallHeader" parent="." instance=ExtResource("1_wall")]
 position = Vector3(0, 2, 0)
-scale = Vector3(0.157143, 0.333333, 1)
+scale = Vector3(0.142857, 0.333333, 1)
 
 [node name="InteractiveDoor" parent="." node_paths=PackedStringArray("navigation_link") instance=ExtResource("2_door")]
 position = Vector3(-1, -1, 0)
