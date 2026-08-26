@@ -4,6 +4,7 @@ extends Node3D
 signal map_generated(seed_value: int)
 
 const ROOM_COUNT := 6
+const ROOM_SCENE_DIRECTORY := "res://components/rooms"
 const GRID_SIZE := 3
 const ROOM_HALF_SIZE := 7.0
 const ROOM_WALL_OFFSET := 6.87
@@ -24,8 +25,6 @@ const SIDE_VECTORS := {
 }
 
 const CORRIDOR_MODULE := preload("res://components/map/corridor_module.tscn")
-const ROOM_A := preload("res://components/rooms/room_a_office.tscn")
-const ROOM_B := preload("res://components/rooms/room_b_storage.tscn")
 const ROOM_WALL := preload("res://assets/3DModel/wall_no_door.tscn")
 const CENTERED_DOOR_WALL := preload("res://components/map/centered_wall_with_door.tscn")
 const ELEVATOR := preload("res://assets/3DModel/elevator.tscn")
@@ -42,10 +41,13 @@ var robot_spawn_position := Vector3.ZERO
 var last_layout: Dictionary = {}
 
 var _rng := RandomNumberGenerator.new()
+var _room_scene_paths: Array[String] = []
 
 
 func generate_map(requested_seed: int = 0) -> bool:
 	_clear_generated_map()
+	if not _refresh_room_scene_paths():
+		return false
 	_configure_rng(requested_seed)
 	var layout := _build_valid_layout()
 	if layout.is_empty():
@@ -58,6 +60,8 @@ func generate_map(requested_seed: int = 0) -> bool:
 
 
 func generate_layout_for_seed(test_seed: int) -> Dictionary:
+	if not _refresh_room_scene_paths():
+		return {}
 	_configure_rng(test_seed)
 	return _build_valid_layout()
 
@@ -106,10 +110,14 @@ func _try_build_compact_layout() -> Dictionary:
 
 	var room_specs: Array[Dictionary] = []
 	for cell: Vector2i in cells:
+		var scene_path := _room_scene_paths[_rng.randi_range(0, _room_scene_paths.size() - 1)]
+		var scene_id := scene_path.get_file().get_basename()
 		room_specs.append({
 			"cell": cell,
 			"origin": Vector2(column_positions[cell.x], row_positions[cell.y]),
-			"type": "A" if _rng.randi_range(0, 1) == 0 else "B",
+			"scene_path": scene_path,
+			"scene_id": scene_id,
+			"type": scene_id.substr(5, 1).to_upper(),
 			"entrances": [] as Array[String],
 			"elevator_side": "",
 		})
@@ -296,9 +304,9 @@ func _instantiate_layout(layout: Dictionary) -> void:
 	var room_specs: Array = layout["rooms"]
 	for room_index: int in range(room_specs.size()):
 		var room_spec: Dictionary = room_specs[room_index]
-		var room_scene: PackedScene = ROOM_A if room_spec["type"] == "A" else ROOM_B
+		var room_scene: PackedScene = load(room_spec["scene_path"]) as PackedScene
 		var room := room_scene.instantiate() as Node3D
-		room.name = "Room%02d_%s" % [room_index + 1, room_spec["type"]]
+		room.name = "Room%02d_%s" % [room_index + 1, room_spec["scene_id"]]
 		rooms_root.add_child(room)
 		var origin: Vector2 = room_spec["origin"]
 		room.position = _to_world(origin)
@@ -306,6 +314,7 @@ func _instantiate_layout(layout: Dictionary) -> void:
 		var elevator_side: String = room_spec["elevator_side"]
 		_configure_room_walls(room, entrances, elevator_side)
 		room.set_meta("generated_room_type", room_spec["type"])
+		room.set_meta("generated_room_scene", room_spec["scene_path"])
 		room.set_meta("generated_entrance_count", entrances.size())
 		room.set_meta("generated_entrance_sides", entrances.duplicate())
 
@@ -451,6 +460,63 @@ func _find_set(parents: Array[int], value: int) -> int:
 		parents[current] = root
 		current = next
 	return root
+
+
+func get_available_room_scene_paths() -> Array[String]:
+	if _room_scene_paths.is_empty():
+		_refresh_room_scene_paths()
+	return _room_scene_paths.duplicate()
+
+
+func _refresh_room_scene_paths() -> bool:
+	_room_scene_paths.clear()
+	var directory: DirAccess = DirAccess.open(ROOM_SCENE_DIRECTORY)
+	if directory == null:
+		push_error("MapGenerator cannot open %s." % ROOM_SCENE_DIRECTORY)
+		return false
+
+	var filenames := directory.get_files()
+	filenames.sort()
+	for filename: String in filenames:
+		if not _is_room_scene_filename(filename):
+			continue
+		var scene_path := "%s/%s" % [ROOM_SCENE_DIRECTORY, filename]
+		var resource: Resource = load(scene_path)
+		if not resource is PackedScene:
+			push_warning("Skipping room scene that cannot be loaded: %s" % scene_path)
+			continue
+		var preview: Node = (resource as PackedScene).instantiate()
+		var is_compatible := preview is Node3D and preview.has_node("Structure")
+		preview.free()
+		if not is_compatible:
+			push_warning("Skipping room scene without a Node3D root and Structure child: %s" % scene_path)
+			continue
+		_room_scene_paths.append(scene_path)
+
+	if _room_scene_paths.is_empty():
+		push_error(
+			"MapGenerator found no compatible room_[letter]_[name].tscn scenes in %s."
+			% ROOM_SCENE_DIRECTORY
+		)
+		return false
+	return true
+
+
+func _is_room_scene_filename(filename: String) -> bool:
+	if not filename.ends_with(".tscn"):
+		return false
+	var scene_id := filename.get_basename()
+	if not scene_id.begins_with("room_") or scene_id.length() < 8:
+		return false
+	var category := scene_id.substr(5, 1)
+	if scene_id.substr(6, 1) != "_":
+		return false
+	var category_code := category.unicode_at(0)
+	var is_ascii_letter := (
+		(category_code >= 65 and category_code <= 90)
+		or (category_code >= 97 and category_code <= 122)
+	)
+	return is_ascii_letter and scene_id.substr(7).length() > 0
 
 
 func _union_sets(parents: Array[int], first: int, second: int) -> void:

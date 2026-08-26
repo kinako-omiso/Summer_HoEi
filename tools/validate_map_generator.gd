@@ -2,6 +2,7 @@ extends SceneTree
 
 
 const GENERATOR_SCENE := preload("res://components/map/map_generator.tscn")
+const ROOM_TEMPLATE := preload("res://components/rooms/room_template.tscn")
 const ROOM_COUNT := 6
 const MINIMUM_LENGTH := 3.0
 const MAXIMUM_LENGTH := 20.0
@@ -20,14 +21,19 @@ func _process(_delta: float) -> bool:
 
 func _run_validation() -> void:
 	var failures: Array[String] = []
-	var observed_room_a := false
-	var observed_room_b := false
+	var observed_duplicate_selection := false
 	var observed_extra_connection := false
 	var observed_one_entrance := false
 	var observed_three_entrances := false
 
 	var generator := GENERATOR_SCENE.instantiate()
 	root.add_child(generator)
+	var available_room_scenes: Array[String] = generator.get_available_room_scene_paths()
+	if available_room_scenes.is_empty():
+		failures.append("no dynamically discoverable room scenes were found")
+	if available_room_scenes.has("res://components/rooms/room_template.tscn"):
+		failures.append("room_template.tscn must not be a random generation candidate")
+	_validate_room_template(failures)
 
 	for test_seed: int in range(1, 101):
 		var layout: Dictionary = generator.generate_layout_for_seed(test_seed)
@@ -36,15 +42,19 @@ func _run_validation() -> void:
 			continue
 		_validate_layout(test_seed, layout, failures)
 		observed_extra_connection = observed_extra_connection or layout["corridors"].size() > ROOM_COUNT - 1
+		var selected_scene_paths: Dictionary = {}
 		for room_spec: Dictionary in layout["rooms"]:
-			observed_room_a = observed_room_a or room_spec["type"] == "A"
-			observed_room_b = observed_room_b or room_spec["type"] == "B"
+			var scene_path: String = room_spec["scene_path"]
+			if not available_room_scenes.has(scene_path):
+				failures.append("seed %d: selected an undiscovered room scene" % test_seed)
+			selected_scene_paths[scene_path] = true
 			var entrance_count: int = room_spec["entrances"].size()
 			observed_one_entrance = observed_one_entrance or entrance_count == 1
 			observed_three_entrances = observed_three_entrances or entrance_count == 3
+		observed_duplicate_selection = observed_duplicate_selection or selected_scene_paths.size() < ROOM_COUNT
 
-	if not observed_room_a or not observed_room_b:
-		failures.append("room A/B randomization did not produce both types")
+	if not observed_duplicate_selection:
+		failures.append("room selection with replacement was not exercised")
 	if not observed_extra_connection:
 		failures.append("no loop-producing extra room connection was observed")
 	if not observed_one_entrance or not observed_three_entrances:
@@ -63,6 +73,35 @@ func _run_validation() -> void:
 		for failure: String in failures:
 			push_error(failure)
 		quit(1)
+
+
+func _validate_room_template(failures: Array[String]) -> void:
+	var room_template := ROOM_TEMPLATE.instantiate()
+	if not room_template is Node3D:
+		failures.append("room template root is not Node3D")
+		room_template.free()
+		return
+	if room_template.get_child_count() != 1 or room_template.get_node_or_null("Structure") == null:
+		failures.append("room template root must contain only Structure")
+		room_template.free()
+		return
+	var structure := room_template.get_node("Structure")
+	var expected_nodes: Array[String] = [
+		"Floor", "Ceiling", "WallEast", "WallSouth", "WallWest"
+	]
+	if structure.get_child_count() != expected_nodes.size():
+		failures.append("room template Structure must contain floor, ceiling, and three walls")
+	for node_name: String in expected_nodes:
+		if structure.get_node_or_null(node_name) == null:
+			failures.append("room template is missing %s" % node_name)
+	if structure.get_node_or_null("WallNorth") != null:
+		failures.append("room template north side must remain open")
+	if room_template.find_children("*", "Light3D", true, false).is_empty():
+		failures.append("room template must contain lighting")
+	var center_light := room_template.get_node_or_null("Structure/Floor/CenterLight") as OmniLight3D
+	if center_light == null or not center_light.is_in_group("lights"):
+		failures.append("room template floor center light is missing or not switchable")
+	room_template.free()
 
 
 func _validate_layout(test_seed: int, layout: Dictionary, failures: Array[String]) -> void:
@@ -134,6 +173,9 @@ func _validate_instantiated_map(generator: Node, failures: Array[String]) -> voi
 		failures.append("instantiated map does not contain six rooms")
 	else:
 		for room: Node in rooms_root.get_children():
+			var scene_path: String = room.get_meta("generated_room_scene", "")
+			if not generator.get_available_room_scene_paths().has(scene_path):
+				failures.append("%s has invalid generated room scene metadata" % room.name)
 			var entrance_count: int = room.get_meta("generated_entrance_count", 0)
 			if entrance_count < 1 or entrance_count > 3:
 				failures.append("%s instantiated entrance count is invalid" % room.name)

@@ -252,3 +252,29 @@ git checkout develop
 git pull --ff-only origin develop
 git branch -d issue/48
 ```
+
+## ランダムマップへ部屋を追加する
+
+`components/rooms/`へ次の命名規則で部屋Sceneを追加すると、ランダムマップの候補へ自動登録されます。
+
+```text
+room_[英字1文字]_[任意の名前].tscn
+```
+
+例：`room_c_meeting.tscn`、`room_d_laboratory.tscn`
+
+新規作成時は`components/rooms/room_template.tscn`を複製し、上記の命名規則へ変更してください。`room_template.tscn`自体は命名規則に一致しないため、生成候補には含まれません。雛形には中央ライト付きの床、ライト付き天井、東・南・西の壁があり、北（ローカル`-Z`）側は開放されています。家具やブレーカーは含まれていません。
+
+マップ生成時に候補一覧から6回、復元抽選します。同じSceneが1つのマップ内で複数回選ばれる場合があります。候補を増やすために生成コードを編集する必要はありません。
+
+部屋Sceneは次の構造・寸法に合わせてください。
+
+- ルートは`Node3D`にする。
+- ルート直下に`Structure`という名前の`Node3D`を置く。
+- 部屋は原点中心の約14m×14m、高さ約6.3mにする。
+- 北をローカル`-Z`、東を`+X`、南を`+Z`、西を`-X`とする。
+- `Structure`内の`WallNorth`、`WallEast`、`WallSouth`、`WallWest`は生成時に入口数に応じて置き換えられる。
+- `Breaker`は任意。存在する場合は入口のない壁へ自動移動する。
+- ランダム削減する家具には、既存部屋と同じ候補グループを設定する。
+
+命名規則に一致していても、ルートが`Node3D`でないSceneや`Structure`がないSceneは警告を出して候補から除外されます。

@@ -7,12 +7,20 @@ signal runtime_map_ready(seed_value: int)
 @onready var map_generator: Node3D = $NavigationRegion3D/MapGenerator
 @onready var player: CharacterBody3D = $Player
 @onready var monster: CharacterBody3D = $demomonster
+@onready var world_environment: WorldEnvironment = $WorldEnvironment
 
 var camera_change := 1
 var is_runtime_map_ready := false
+var debug_lighting_enabled := true
+var _debug_ambient_energy := 0.0
+var _debug_background_energy := 0.0
 
 
 func _ready() -> void:
+	var environment := world_environment.environment
+	if environment != null:
+		_debug_ambient_energy = environment.ambient_light_energy
+		_debug_background_energy = environment.background_energy_multiplier
 	player.process_mode = Node.PROCESS_MODE_DISABLED
 	monster.process_mode = Node.PROCESS_MODE_DISABLED
 	NavigationServer3D.map_set_use_async_iterations(
@@ -69,6 +77,22 @@ func _process(_delta: float) -> void:
 	elif camera_change == 1 and Input.is_action_just_pressed("debug_camera_change"):
 		$demomonster/DebugCamera.make_current()
 		camera_change = -1
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("debug_lighting_toggle") and not event.is_echo():
+		toggle_debug_lighting()
+		get_viewport().set_input_as_handled()
+
+
+func toggle_debug_lighting() -> void:
+	debug_lighting_enabled = not debug_lighting_enabled
+	var environment := world_environment.environment
+	if environment == null:
+		return
+	environment.ambient_light_energy = _debug_ambient_energy if debug_lighting_enabled else 0.0
+	environment.background_energy_multiplier = _debug_background_energy if debug_lighting_enabled else 0.0
+	print("Debug lighting: %s" % ("ON" if debug_lighting_enabled else "OFF"))
 
 
 func _on_player_hit() -> void:
