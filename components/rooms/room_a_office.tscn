@@ -1,0 +1,49 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://components/rooms/room_component.gd" id="1_room"]
+[ext_resource type="PackedScene" path="res://assets/3DModel/floor_square.tscn" id="2_floor"]
+[ext_resource type="PackedScene" path="res://assets/3DModel/wall_no_door.tscn" id="3_wall"]
+[ext_resource type="PackedScene" path="res://assets/3DModel/ceiling_square_with_light.tscn" id="4_ceiling"]
+[ext_resource type="PackedScene" path="res://demobreaker/breaker.tscn" id="5_breaker"]
+[ext_resource type="PackedScene" path="res://assets/3DModel/desk_setup.tscn" id="6_desk"]
+
+[node name="RoomAOffice" type="Node3D" groups=["room_components"]]
+script = ExtResource("1_room")
+
+[node name="Structure" type="Node3D" parent="."]
+
+[node name="Floor" parent="Structure" instance=ExtResource("2_floor")]
+
+[node name="Ceiling" parent="Structure" instance=ExtResource("4_ceiling")]
+position = Vector3(0, 6.31, 0)
+
+[node name="WallSouth" parent="Structure" instance=ExtResource("3_wall")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 3.15, 6.87)
+
+[node name="WallEast" parent="Structure" instance=ExtResource("3_wall")]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 6.87, 3.15, 0)
+
+[node name="WallWest" parent="Structure" instance=ExtResource("3_wall")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -6.87, 3.15, 0)
+
+[node name="Breaker" parent="." instance=ExtResource("5_breaker")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 2, 6.62)
+
+[node name="RandomDeskCandidates" type="Node3D" parent="."]
+
+[node name="DeskMonitor01" parent="RandomDeskCandidates" groups=["random_desk_monitor_candidates"] instance=ExtResource("6_desk")]
+position = Vector3(-4.3, 0.15, -3.8)
+
+[node name="DeskMonitor02" parent="RandomDeskCandidates" groups=["random_desk_monitor_candidates"] instance=ExtResource("6_desk")]
+position = Vector3(-4.3, 0.15, 0)
+
+[node name="DeskMonitor03" parent="RandomDeskCandidates" groups=["random_desk_monitor_candidates"] instance=ExtResource("6_desk")]
+position = Vector3(-4.3, 0.15, 3.8)
+
+[node name="DeskMonitor04" parent="RandomDeskCandidates" groups=["random_desk_monitor_candidates"] instance=ExtResource("6_desk")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 4.3, 0.15, -2)
+
+[node name="DeskMonitor05" parent="RandomDeskCandidates" groups=["random_desk_monitor_candidates"] instance=ExtResource("6_desk")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 4.3, 0.15, 2.2)
+
+[connection signal="lights_out" from="Breaker" to="." method="_on_breaker_lights_out"]

@@ -1,0 +1,71 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://world_surface.gd" id="1_surface"]
+
+[sub_resource type="StandardMaterial3D" id="Material_pot"]
+albedo_color = Color(0.28, 0.12, 0.055, 1)
+roughness = 0.9
+
+[sub_resource type="StandardMaterial3D" id="Material_stem"]
+albedo_color = Color(0.18, 0.3, 0.07, 1)
+roughness = 0.85
+
+[sub_resource type="StandardMaterial3D" id="Material_leaves"]
+albedo_color = Color(0.08, 0.42, 0.12, 1)
+roughness = 0.8
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_pot"]
+material = SubResource("Material_pot")
+top_radius = 0.46
+bottom_radius = 0.56
+height = 0.7
+radial_segments = 16
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_stem"]
+material = SubResource("Material_stem")
+top_radius = 0.08
+bottom_radius = 0.11
+height = 1.15
+radial_segments = 12
+
+[sub_resource type="SphereMesh" id="SphereMesh_leaves"]
+material = SubResource("Material_leaves")
+radius = 0.65
+height = 1.15
+radial_segments = 16
+rings = 8
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape_plant"]
+radius = 0.65
+height = 2.4
+
+[node name="PlantPlaceholder" type="StaticBody3D"]
+collision_layer = 4
+collision_mask = 0
+script = ExtResource("1_surface")
+
+[node name="Pot" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.35, 0)
+mesh = SubResource("CylinderMesh_pot")
+
+[node name="Stem" type="MeshInstance3D" parent="."]
+position = Vector3(0, 1.15, 0)
+mesh = SubResource("CylinderMesh_stem")
+
+[node name="LeavesCenter" type="MeshInstance3D" parent="."]
+position = Vector3(0, 1.75, 0)
+mesh = SubResource("SphereMesh_leaves")
+
+[node name="LeavesLeft" type="MeshInstance3D" parent="."]
+position = Vector3(-0.38, 1.55, 0.08)
+scale = Vector3(0.75, 0.7, 0.75)
+mesh = SubResource("SphereMesh_leaves")
+
+[node name="LeavesRight" type="MeshInstance3D" parent="."]
+position = Vector3(0.36, 1.48, -0.12)
+scale = Vector3(0.72, 0.68, 0.72)
+mesh = SubResource("SphereMesh_leaves")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+position = Vector3(0, 1.2, 0)
+shape = SubResource("CapsuleShape_plant")
