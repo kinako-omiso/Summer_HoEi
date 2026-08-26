@@ -368,8 +368,11 @@ func _configure_room_walls(room: Node3D, entrances: Array, elevator_side: String
 		else:
 			wall = ROOM_WALL.instantiate() as Node3D
 			wall.name = "Wall%s" % side.capitalize()
-		structure.add_child(wall)
 		_apply_wall_transform(wall, side)
+		# AnimatableBody3D children synchronize their global transform when they
+		# enter the tree. Set the wall transform first so doors do not remain at
+		# the room origin (and below the floor) when the wall is moved afterward.
+		structure.add_child(wall)
 		if not entrances.has(side):
 			continue
 		if side == elevator_side:
@@ -438,8 +441,8 @@ func _ensure_at_least_one_generated_door(
 		open_wall.free()
 	var door_wall := CENTERED_DOOR_WALL.instantiate() as Node3D
 	door_wall.name = entrance_name
-	structure.add_child(door_wall)
 	_apply_wall_transform(door_wall, side)
+	structure.add_child(door_wall)
 
 	var open_sides: Array = room.get_meta("generated_open_entrance_sides", [])
 	var door_sides: Array = room.get_meta("generated_door_sides", [])

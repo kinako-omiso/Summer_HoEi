@@ -35,6 +35,7 @@ func _run_validation() -> void:
 	if available_room_scenes.has("res://components/rooms/room_template.tscn"):
 		failures.append("room_template.tscn must not be a random generation candidate")
 	_validate_room_template(failures)
+	_validate_centered_door_fit(generator, failures)
 
 	for test_seed: int in range(1, 101):
 		var layout: Dictionary = generator.generate_layout_for_seed(test_seed)
@@ -129,6 +130,29 @@ func _validate_door_swing_obstruction_guard(generator: Node, failures: Array[Str
 	if generator.call("_door_swing_is_blocked", room, entrance_wall):
 		failures.append("object outside the door swing was reported as an obstruction")
 	room.free()
+
+
+func _validate_centered_door_fit(generator: Node, failures: Array[String]) -> void:
+	var wall := CENTERED_DOOR_WALL.instantiate() as Node3D
+	generator.add_child(wall)
+	var door := wall.get_node("InteractiveDoor") as AnimatableBody3D
+	var door_bounds := AABB()
+	for mesh: MeshInstance3D in door.find_children("*", "MeshInstance3D", true, false):
+		var wall_space_bounds := wall.global_transform.affine_inverse() * mesh.global_transform * mesh.get_aabb()
+		door_bounds = wall_space_bounds if door_bounds.size == Vector3.ZERO else door_bounds.merge(wall_space_bounds)
+	var left_bounds := _collision_bounds_in_wall_space(wall, "WallLeft/CollisionShape3D")
+	var right_bounds := _collision_bounds_in_wall_space(wall, "WallRight/CollisionShape3D")
+	if absf(left_bounds.end.x - door_bounds.position.x) > 0.02:
+		failures.append("centered door has a gap at its left edge")
+	if absf(right_bounds.position.x - door_bounds.end.x) > 0.02:
+		failures.append("centered door has a gap at its right edge")
+	wall.free()
+
+
+func _collision_bounds_in_wall_space(wall: Node3D, path: String) -> AABB:
+	var collision_shape := wall.get_node(path) as CollisionShape3D
+	var shape_to_wall := wall.global_transform.affine_inverse() * collision_shape.global_transform
+	return shape_to_wall * collision_shape.shape.get_debug_mesh().get_aabb()
 
 
 func _validate_random_door_generation(generator: Node, failures: Array[String]) -> void:
