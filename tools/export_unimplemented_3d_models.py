@@ -97,6 +97,11 @@ def make_tscn(
     size = blender_to_godot(blender_size)
     size = Vector((max(abs(size.x), 0.01), max(abs(size.y), 0.01), max(abs(size.z), 0.01)))
 
+    if asset_stem == "elevator":
+        return make_elevator_tscn(asset_stem, root_name, center, size)
+    if asset_stem == "elevator_door":
+        return make_elevator_door_tscn(asset_stem, root_name, center, size)
+
     scene = f'''[gd_scene load_steps=4 format=3]
 
 [ext_resource type="PackedScene" path="res://assets/3DModel/{asset_stem}.glb" id="1_model"]
@@ -130,6 +135,117 @@ area_range = 15.0
 '''
 
     return scene
+
+
+def make_elevator_tscn(
+    asset_stem: str,
+    root_name: str,
+    center: Vector,
+    size: Vector,
+) -> str:
+    """Create an outward-facing cabin with an open, walkable entrance."""
+    thickness = 0.18
+    model_offset = Vector((center.x * 2.0, 0.0, center.z * 2.0))
+    cabin_depth = size.z * 0.5
+    cabin_center_z = center.z - size.z * 0.25
+    left_x = center.x - size.x * 0.5 + thickness * 0.5
+    right_x = center.x + size.x * 0.5 - thickness * 0.5
+    back_z = center.z + thickness * 0.5
+    floor_y = center.y - size.y * 0.5 - thickness * 0.5
+    ceiling_y = center.y + size.y * 0.5 + thickness * 0.5
+
+    return f'''[gd_scene load_steps=7 format=3]
+
+[ext_resource type="PackedScene" path="res://assets/3DModel/{asset_stem}.glb" id="1_model"]
+[ext_resource type="Script" path="res://elevator.gd" id="2_script"]
+
+[sub_resource type="BoxShape3D" id="BoxShape_side"]
+size = {vector3(Vector((thickness, size.y, cabin_depth)))}
+
+[sub_resource type="BoxShape3D" id="BoxShape_back"]
+size = {vector3(Vector((size.x, size.y, thickness)))}
+
+[sub_resource type="BoxShape3D" id="BoxShape_floor"]
+size = {vector3(Vector((size.x, thickness, cabin_depth)))}
+
+[sub_resource type="BoxShape3D" id="BoxShape_ceiling"]
+size = {vector3(Vector((size.x, thickness, cabin_depth)))}
+
+[node name="{root_name}" type="StaticBody3D"]
+collision_layer = 4
+collision_mask = 0
+script = ExtResource("2_script")
+
+[node name="Model" parent="." instance=ExtResource("1_model")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, {number(model_offset.x)}, 0, {number(model_offset.z)})
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+position = Vector3({number(left_x)}, {number(center.y)}, {number(cabin_center_z)})
+shape = SubResource("BoxShape_side")
+
+[node name="CollisionShapeRight" type="CollisionShape3D" parent="."]
+position = Vector3({number(right_x)}, {number(center.y)}, {number(cabin_center_z)})
+shape = SubResource("BoxShape_side")
+
+[node name="CollisionShapeBack" type="CollisionShape3D" parent="."]
+position = Vector3({number(center.x)}, {number(center.y)}, {number(back_z)})
+shape = SubResource("BoxShape_back")
+
+[node name="CollisionShapeFloor" type="CollisionShape3D" parent="."]
+position = Vector3({number(center.x)}, {number(floor_y)}, {number(cabin_center_z)})
+shape = SubResource("BoxShape_floor")
+
+[node name="CollisionShapeCeiling" type="CollisionShape3D" parent="."]
+position = Vector3({number(center.x)}, {number(ceiling_y)}, {number(cabin_center_z)})
+shape = SubResource("BoxShape_ceiling")
+'''
+
+
+def make_elevator_door_tscn(
+    asset_stem: str,
+    root_name: str,
+    center: Vector,
+    size: Vector,
+) -> str:
+    """Center the imported door mesh so its closed position is the scene origin."""
+    model_offset = -center
+    proximity_y = 1.0 - size.y * 0.5
+
+    return f'''[gd_scene load_steps=5 format=3]
+
+[ext_resource type="PackedScene" path="res://assets/3DModel/{asset_stem}.glb" id="1_model"]
+[ext_resource type="Script" path="res://elevator_door.gd" id="2_script"]
+
+[sub_resource type="BoxShape3D" id="BoxShape_model"]
+size = {vector3(size)}
+
+[sub_resource type="BoxShape3D" id="BoxShape_proximity"]
+size = Vector3(3, 2, 3)
+
+[node name="{root_name}" type="Node3D" groups=["elevator_doors"]]
+script = ExtResource("2_script")
+
+[node name="DoorPanel" type="AnimatableBody3D" parent="."]
+collision_layer = 4
+collision_mask = 0
+sync_to_physics = true
+
+[node name="Model" parent="DoorPanel" instance=ExtResource("1_model")]
+position = {vector3(model_offset)}
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="DoorPanel"]
+shape = SubResource("BoxShape_model")
+
+[node name="ProximityArea" type="Area3D" parent="."]
+position = Vector3(0, {number(proximity_y)}, -1.5)
+collision_layer = 0
+collision_mask = 1
+monitoring = true
+monitorable = false
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ProximityArea"]
+shape = SubResource("BoxShape_proximity")
+'''
 
 
 def describe(source_name: str, minimum: Vector, maximum: Vector) -> None:

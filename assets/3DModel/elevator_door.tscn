@@ -1,18 +1,34 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="PackedScene" path="res://assets/3DModel/elevator_door.glb" id="1_model"]
-[ext_resource type="Script" path="res://world_surface.gd" id="2_script"]
+[ext_resource type="Script" path="res://elevator_door.gd" id="2_script"]
 
 [sub_resource type="BoxShape3D" id="BoxShape_model"]
 size = Vector3(1.361738, 4.639905, 0.236244)
 
-[node name="ElevatorDoor" type="StaticBody3D"]
-collision_layer = 4
-collision_mask = 0
+[sub_resource type="BoxShape3D" id="BoxShape_proximity"]
+size = Vector3(3.0, 2.0, 3.0)
+
+[node name="ElevatorDoor" type="Node3D" groups=["elevator_doors"]]
 script = ExtResource("2_script")
 
-[node name="Model" parent="." instance=ExtResource("1_model")]
+[node name="DoorPanel" type="AnimatableBody3D" parent="."]
+collision_layer = 4
+collision_mask = 0
+sync_to_physics = true
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
-position = Vector3(-0.636256, -0.301577, -1.549337)
+[node name="Model" parent="DoorPanel" instance=ExtResource("1_model")]
+position = Vector3(0.636256, 0.301577, 1.549337)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="DoorPanel"]
 shape = SubResource("BoxShape_model")
+
+[node name="ProximityArea" type="Area3D" parent="."]
+position = Vector3(0, -1.32, -1.5)
+collision_layer = 0
+collision_mask = 1
+monitoring = true
+monitorable = false
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ProximityArea"]
+shape = SubResource("BoxShape_proximity")

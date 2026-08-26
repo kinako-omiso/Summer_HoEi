@@ -13,3 +13,4 @@ func _process(delta: float) -> void:
 
 func _on_interactive_breaker_breaker_off() -> void:
 	lights_out.emit()
+	get_tree().call_group(&"elevator_doors", &"on_power_outage")

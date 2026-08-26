@@ -8,7 +8,7 @@
 [sub_resource type="CylinderShape3D" id="CylinderShape3D_mrimj"]
 radius = 1.5776367
 
-[node name="Player" type="CharacterBody3D" unique_id=943185070]
+[node name="Player" type="CharacterBody3D" unique_id=943185070 groups=["player"]]
 collision_mask = 12
 script = ExtResource("1_onrkg")
 

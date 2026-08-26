@@ -13,7 +13,6 @@ script = ExtResource("1_room")
 [node name="Structure" type="Node3D" parent="." unique_id=1207093419]
 
 [node name="Floor" parent="Structure" unique_id=2041229843 instance=ExtResource("2_floor")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.14094734, -0.029747486, 0.095517635)
 
 [node name="Ceiling" parent="Structure" unique_id=1458186744 instance=ExtResource("4_ceiling")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.31, 0)

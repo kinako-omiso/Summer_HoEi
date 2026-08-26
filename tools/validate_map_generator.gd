@@ -37,6 +37,7 @@ func _run_validation() -> void:
 	if available_room_scenes.has("res://components/rooms/room_template.tscn"):
 		failures.append("room_template.tscn must not be a random generation candidate")
 	_validate_room_template(failures)
+	_validate_room_floor_alignment(failures)
 	_validate_centered_door_fit(generator, failures)
 	_validate_authored_breaker_transforms(generator, failures)
 	_validate_authored_wall_preservation(generator, failures)
@@ -110,6 +111,17 @@ func _validate_room_template(failures: Array[String]) -> void:
 	if center_light == null or not center_light.is_in_group("lights"):
 		failures.append("room template floor center light is missing or not switchable")
 	room_template.free()
+
+
+func _validate_room_floor_alignment(failures: Array[String]) -> void:
+	for room_scene: PackedScene in [ROOM_A, ROOM_B]:
+		var room := room_scene.instantiate() as Node3D
+		var floor := room.get_node_or_null("Structure/Floor") as Node3D
+		if floor == null:
+			failures.append("%s is missing Structure/Floor" % room.name)
+		elif not floor.transform.is_equal_approx(Transform3D.IDENTITY):
+			failures.append("%s floor is not aligned with the corridor floor" % room.name)
+		room.free()
 
 
 func _validate_door_swing_obstruction_guard(generator: Node, failures: Array[String]) -> void:
@@ -338,5 +350,8 @@ func _validate_instantiated_map(generator: Node, failures: Array[String]) -> voi
 		failures.append("instantiated map has too few room corridors")
 	if generator.get_node_or_null("ElevatorTerminal/Elevator") == null:
 		failures.append("elevator model is missing")
-	if generator.get_node_or_null("ElevatorTerminal/ElevatorDoor") == null:
+	var elevator_door := generator.get_node_or_null("ElevatorTerminal/ElevatorDoor") as Node3D
+	if elevator_door == null:
 		failures.append("closed elevator door is missing")
+	elif not elevator_door.position.is_equal_approx(Vector3(0.0, 2.622, 0.0)):
+		failures.append("closed elevator door is offset from the elevator entrance")
