@@ -325,6 +325,7 @@ func _instantiate_layout(layout: Dictionary) -> void:
 			"desks": _prune_candidate_group(room, &"random_desk_monitor_candidates"),
 			"plants": _prune_candidate_group(room, &"random_plant_candidates"),
 			"lockers": _prune_candidate_group(room, &"random_locker_candidates"),
+			"pillars": _prune_candidate_group(room, &"pillar"),
 		}
 		var door_report := _configure_room_walls(room, entrances, elevator_side)
 		room.set_meta("generated_room_type", room_spec["type"])
