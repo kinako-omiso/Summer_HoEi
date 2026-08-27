@@ -45,22 +45,27 @@ transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 3.15, 6.87)
 [node name="WallWest" parent="Structure" unique_id=565030952 instance=ExtResource("4_5vsw0")]
 transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -6.87, 3.15, 0)
 
-[node name="Pillar1" parent="Structure" unique_id=1775660559 instance=ExtResource("5_5vsw0")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.7, 3.001, 3.7)
-
-[node name="Pillar2" parent="Structure" unique_id=930788533 instance=ExtResource("5_5vsw0")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.7, 3.001, 3.7)
-
-[node name="Pillar3" parent="Structure" unique_id=1023796021 instance=ExtResource("5_5vsw0")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.7, 3.001, -3.7)
-
-[node name="Pillar4" parent="Structure" unique_id=1466317715 instance=ExtResource("5_5vsw0")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.7, 3.001, -3.7)
-
 [node name="PillarCenter" parent="Structure" unique_id=2021830318 instance=ExtResource("6_e3gq3")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.0843043, 0)
 
 [node name="BreakerManager" parent="." unique_id=1977523128 instance=ExtResource("7_c5j1s")]
 transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 0, 2.9124384, 1.7430449)
+
+[node name="RandomPillarCandidates" type="Node3D" parent="." unique_id=2068588081]
+
+[node name="Pillar01" parent="RandomPillarCandidates" unique_id=1775660559 groups=["pillar"] instance=ExtResource("5_5vsw0")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.7, 3.001, 3.7)
+
+[node name="Pillar02" parent="RandomPillarCandidates" unique_id=930788533 groups=["pillar"] instance=ExtResource("5_5vsw0")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.7, 3.001, 3.7)
+
+[node name="Pillar03" parent="RandomPillarCandidates" unique_id=1023796021 groups=["pillar"] instance=ExtResource("5_5vsw0")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.7, 3.001, -3.7)
+
+[node name="Pillar04" parent="RandomPillarCandidates" unique_id=1466317715 groups=["pillar"] instance=ExtResource("5_5vsw0")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.7, 3.001, -3.7)
+
+[node name="Pillar05" parent="RandomPillarCandidates" unique_id=545124577 groups=["pillar"] instance=ExtResource("5_5vsw0")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.001, 0)
 
 [connection signal="lights_out" from="BreakerManager" to="." method="_on_breaker_lights_out"]
