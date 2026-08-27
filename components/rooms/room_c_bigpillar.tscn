@@ -49,7 +49,7 @@ transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -6.87, 3.15, 0)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.0843043, 0)
 
 [node name="BreakerManager" parent="." unique_id=1977523128 instance=ExtResource("7_c5j1s")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 0, 2.9124384, 1.7430449)
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 0, 2.9124384, 1.6370475)
 
 [node name="RandomPillarCandidates" type="Node3D" parent="." unique_id=2068588081]
 
