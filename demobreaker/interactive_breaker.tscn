@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://c0qyote2mely8"]
 
 [ext_resource type="Script" uid="uid://dw6mbapcjv47i" path="res://demobreaker/interactive_breaker.gd" id="1_5wp76"]
-[ext_resource type="PackedScene" uid="uid://uqmaom1pjcmy" path="res://demobreaker/ブレーカースイッチ(仮).glb" id="2_juo8o"]
+[ext_resource type="PackedScene" uid="uid://c583yl3vgw15i" path="res://assets/3DModel/breaker_bar.glb" id="2_5wp76"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_uevw2"]
 size = Vector3(1.3707886, 1.7890396, 1.6185379)
@@ -9,8 +9,8 @@ size = Vector3(1.3707886, 1.7890396, 1.6185379)
 [node name="InteractiveBreaker" type="Node3D" unique_id=809419505]
 script = ExtResource("1_5wp76")
 
-[node name="Model" parent="." unique_id=1347736308 instance=ExtResource("2_juo8o")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 0)
+[node name="breaker_bar" parent="." unique_id=595270288 instance=ExtResource("2_5wp76")]
+transform = Transform3D(-3.090862e-08, 3.090862e-08, 1, 0.70710677, 0.70710677, 0, -0.70710677, 0.70710677, -4.371139e-08, 0, 0, 0)
 
 [node name="InteractionArea" type="Area3D" parent="." unique_id=2080138545]
 collision_layer = 0
