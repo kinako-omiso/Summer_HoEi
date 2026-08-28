@@ -179,14 +179,23 @@ func _validate_elevator_door_fit(generator: Node, failures: Array[String]) -> vo
 	door.position = Vector3(0.0, 2.622 - 3.15, 0.0)
 	wall.add_child(door)
 
-	var panel_shape := door.get_node("DoorPanel/CollisionShape3D") as CollisionShape3D
-	var shape_to_wall := wall.global_transform.affine_inverse() * panel_shape.global_transform
-	var door_bounds: AABB = shape_to_wall * panel_shape.shape.get_debug_mesh().get_aabb()
+	var door_bounds := AABB()
+	for panel_name: String in ["DoorPanelLeft", "DoorPanelRight"]:
+		var panel_shape := door.get_node(
+			"%s/CollisionShape3D" % panel_name
+		) as CollisionShape3D
+		var shape_to_wall := wall.global_transform.affine_inverse() * panel_shape.global_transform
+		var panel_bounds: AABB = shape_to_wall * panel_shape.shape.get_debug_mesh().get_aabb()
+		door_bounds = panel_bounds if door_bounds.size == Vector3.ZERO else door_bounds.merge(panel_bounds)
 	var header_bounds := _collision_bounds_in_wall_space(
 		wall, "WallHeader/CollisionShape3D"
 	)
+	var left_bounds := _collision_bounds_in_wall_space(wall, "WallLeft/CollisionShape3D")
+	var right_bounds := _collision_bounds_in_wall_space(wall, "WallRight/CollisionShape3D")
 	if door_bounds.end.y > header_bounds.position.y:
 		failures.append("elevator door is taller than its generated wall opening")
+	if door_bounds.position.x < left_bounds.end.x or door_bounds.end.x > right_bounds.position.x:
+		failures.append("two-panel elevator door is wider than its generated wall opening")
 	wall.free()
 
 

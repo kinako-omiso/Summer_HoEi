@@ -12,15 +12,28 @@ size = Vector3(3.0, 2.0, 3.0)
 [node name="ElevatorDoor" type="Node3D" groups=["elevator_doors"]]
 script = ExtResource("2_script")
 
-[node name="DoorPanel" type="AnimatableBody3D" parent="."]
+[node name="DoorPanelLeft" type="AnimatableBody3D" parent="."]
+position = Vector3(-0.680869, 0, 0)
 collision_layer = 4
 collision_mask = 0
 sync_to_physics = true
 
-[node name="Model" parent="DoorPanel" instance=ExtResource("1_model")]
+[node name="Model" parent="DoorPanelLeft" instance=ExtResource("1_model")]
 position = Vector3(0.636256, 0.301577, 1.549337)
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="DoorPanel"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="DoorPanelLeft"]
+shape = SubResource("BoxShape_model")
+
+[node name="DoorPanelRight" type="AnimatableBody3D" parent="."]
+position = Vector3(0.680869, 0, 0)
+collision_layer = 4
+collision_mask = 0
+sync_to_physics = true
+
+[node name="Model" parent="DoorPanelRight" instance=ExtResource("1_model")]
+position = Vector3(0.636256, 0.301577, 1.549337)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="DoorPanelRight"]
 shape = SubResource("BoxShape_model")
 
 [node name="ProximityArea" type="Area3D" parent="."]
