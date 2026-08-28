@@ -144,6 +144,12 @@ func _validate_ceiling_lights(
 		failures.append("%s selected a lighted ceiling without lights" % owner_name)
 	elif variant == "normal" and has_lights:
 		failures.append("%s selected a normal ceiling that contains lights" % owner_name)
+	for node: Node in ceiling.find_children("*", "Light3D", true, false):
+		var light := node as Light3D
+		if light.light_energy <= 0.0:
+			failures.append("%s contains a ceiling light with no emitted energy" % owner_name)
+		if light is OmniLight3D and (light as OmniLight3D).omni_range <= 0.0:
+			failures.append("%s contains a ceiling light with no effective range" % owner_name)
 
 
 func _validate_debug_lighting(failures: Array[String]) -> void:
