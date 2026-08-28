@@ -572,8 +572,11 @@ func _add_elevator_terminal(parent: Node3D, door_point: Vector2, yaw: float) -> 
 
 	var door := ELEVATOR_DOOR.instantiate() as Node3D
 	door.name = "ElevatorDoor"
-	parent.add_child(door)
 	door.position = Vector3(0.0, 2.622, 0.0)
+	# DoorPanel is an AnimatableBody3D, so it captures its global transform when
+	# entering the tree. Position its parent first to keep the closed panel at
+	# the elevator entrance instead of synchronized below the floor.
+	parent.add_child(door)
 
 
 func _prune_candidate_group(room: Node, group_name: StringName) -> int:

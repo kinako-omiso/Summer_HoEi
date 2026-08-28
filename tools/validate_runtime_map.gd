@@ -52,6 +52,7 @@ func _validate_ready_map() -> void:
 	var corridors := generator.get_node("Corridors")
 	_validate_debug_lighting(failures)
 	_validate_visible_doors(generator, player, failures)
+	_validate_elevator_door(generator, failures)
 	if not corridors.find_children("*", "Light3D", true, false).is_empty():
 		failures.append("generated corridors still contain gameplay lights")
 	if navigation_region.navigation_mesh.get_polygon_count() <= 0:
@@ -144,3 +145,13 @@ func _validate_visible_doors(generator: Node, player: CharacterBody3D, failures:
 			failures.append("%s has no mesh visible to PlayerCamera" % door.get_path())
 		elif combined_bounds.size.length() < 0.1:
 			failures.append("%s has an empty visual AABB" % door.get_path())
+
+
+func _validate_elevator_door(generator: Node, failures: Array[String]) -> void:
+	var door := generator.get_node("ElevatorTerminal/ElevatorDoor") as Node3D
+	var panel := door.get_node("DoorPanel") as AnimatableBody3D
+	var expected_position := door.global_transform * panel.position
+	if panel.global_position.distance_to(expected_position) > 0.01:
+		failures.append("elevator door panel did not inherit its positioned parent transform")
+	if panel.global_position.y < 0.0:
+		failures.append("elevator door panel remained below the floor")
