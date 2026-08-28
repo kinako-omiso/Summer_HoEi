@@ -29,6 +29,16 @@ const SIDE_VECTORS := {
 }
 
 const CORRIDOR_MODULE := preload("res://components/map/corridor_module.tscn")
+const CORRIDOR_CEILING_NORMAL := preload(
+	"res://assets/3DModel/corridor_ceiling_without_light.tscn"
+)
+const CORRIDOR_CEILING_WITH_LIGHT := preload(
+	"res://assets/3DModel/corridor_ceiling.tscn"
+)
+const ROOM_CEILING_NORMAL := preload("res://assets/3DModel/ceiling_square.tscn")
+const ROOM_CEILING_WITH_LIGHT := preload(
+	"res://assets/3DModel/ceiling_square_with_light.tscn"
+)
 const ROOM_WALL := preload("res://assets/3DModel/wall_no_door.tscn")
 const CENTERED_DOOR_WALL := preload("res://components/map/centered_wall_with_door.tscn")
 const ELEVATOR_ENTRANCE_WALL := preload(
@@ -302,13 +312,15 @@ func _instantiate_layout(layout: Dictionary) -> void:
 	add_child(elevator_root)
 
 	var corridors: Array = layout["corridors"]
+	var corridor_light_variants := _build_corridor_light_variants(corridors.size())
 	for corridor_index: int in range(corridors.size()):
 		var corridor: Dictionary = corridors[corridor_index]
 		_add_corridor_edge(
 			corridors_root,
 			corridor["from"],
 			corridor["to"],
-			"RoomConnection%02d" % (corridor_index + 1)
+			"RoomConnection%02d" % (corridor_index + 1),
+			corridor_light_variants[corridor_index],
 		)
 
 	var room_instances: Array[Node3D] = []
@@ -321,6 +333,7 @@ func _instantiate_layout(layout: Dictionary) -> void:
 		rooms_root.add_child(room)
 		var origin: Vector2 = room_spec["origin"]
 		room.position = _to_world(origin)
+		_randomize_room_ceiling(room)
 		var entrances: Array = room_spec["entrances"]
 		var elevator_side: String = room_spec["elevator_side"]
 		_remove_fixed_entrance_obstructions(room, entrances)
@@ -555,7 +568,27 @@ func _canonical_breaker_yaw(side: String) -> float:
 	return 0.0
 
 
-func _add_corridor_edge(parent: Node3D, from: Vector2, to: Vector2, edge_name: String) -> void:
+func _build_corridor_light_variants(corridor_count: int) -> Array[bool]:
+	var variants: Array[bool] = []
+	for _corridor_index: int in range(corridor_count):
+		variants.append(_rng.randi_range(0, 1) == 1)
+	if corridor_count >= 2:
+		# Keep the placement random while guaranteeing that a generated map
+		# contains both a lighted and an unlighted corridor ceiling.
+		if not variants.has(true):
+			variants[_rng.randi_range(0, corridor_count - 1)] = true
+		if not variants.has(false):
+			variants[_rng.randi_range(0, corridor_count - 1)] = false
+	return variants
+
+
+func _add_corridor_edge(
+	parent: Node3D,
+	from: Vector2,
+	to: Vector2,
+	edge_name: String,
+	ceiling_has_lights: bool,
+) -> void:
 	var length := from.distance_to(to)
 	var direction := (to - from).normalized()
 	var center := from.lerp(to, 0.5)
@@ -564,8 +597,33 @@ func _add_corridor_edge(parent: Node3D, from: Vector2, to: Vector2, edge_name: S
 	parent.add_child(module)
 	module.position = _to_world(center)
 	module.rotation.y = _yaw_from_direction(direction)
-	module.call("configure", length)
+	var ceiling_scene: PackedScene = (
+		CORRIDOR_CEILING_WITH_LIGHT if ceiling_has_lights else CORRIDOR_CEILING_NORMAL
+	)
+	module.call("configure", length, ceiling_scene, not ceiling_has_lights)
 	module.set_meta("centerline_length", length)
+	module.set_meta("generated_ceiling_variant", "with_light" if ceiling_has_lights else "normal")
+
+
+func _randomize_room_ceiling(room: Node3D) -> void:
+	var structure := room.get_node_or_null("Structure") as Node3D
+	if structure == null:
+		return
+	var authored_ceiling := structure.get_node_or_null("Ceiling") as Node3D
+	var ceiling_transform := Transform3D(Basis.IDENTITY, Vector3(0.0, 6.31, 0.0))
+	if authored_ceiling != null:
+		ceiling_transform = authored_ceiling.transform
+		authored_ceiling.free()
+
+	var ceiling_has_lights := _rng.randi_range(0, 1) == 1
+	var ceiling_scene: PackedScene = (
+		ROOM_CEILING_WITH_LIGHT if ceiling_has_lights else ROOM_CEILING_NORMAL
+	)
+	var ceiling := ceiling_scene.instantiate() as Node3D
+	ceiling.name = "Ceiling"
+	ceiling.transform = ceiling_transform
+	structure.add_child(ceiling)
+	room.set_meta("generated_ceiling_variant", "with_light" if ceiling_has_lights else "normal")
 
 
 func _add_elevator_terminal(parent: Node3D, door_point: Vector2, yaw: float) -> void:

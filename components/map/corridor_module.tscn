@@ -1,8 +1,7 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://components/map/corridor_module.gd" id="1_script"]
 [ext_resource type="PackedScene" path="res://assets/3DModel/corridor_floor.tscn" id="2_floor"]
-[ext_resource type="PackedScene" path="res://assets/3DModel/corridor_ceiling_without_light.tscn" id="3_ceiling"]
 [ext_resource type="PackedScene" path="res://assets/3DModel/corridor_wall.tscn" id="4_wall"]
 
 [node name="CorridorModule" type="Node3D"]
@@ -10,8 +9,8 @@ script = ExtResource("1_script")
 
 [node name="Floor" parent="." instance=ExtResource("2_floor")]
 
-[node name="Ceiling" parent="." instance=ExtResource("3_ceiling")]
-transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 0, 6.31, 0)
+[node name="Ceiling" type="Node3D" parent="."]
+position = Vector3(0, 6.31, 0)
 
 [node name="WallLeft" parent="." instance=ExtResource("4_wall")]
 transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, -3.87, 3.15, 0)

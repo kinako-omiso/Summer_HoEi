@@ -57,8 +57,7 @@ func _validate_ready_map() -> void:
 	_validate_visible_doors(generator, player, failures)
 	_validate_elevator_door(generator, failures)
 	await _validate_elevator_door_motion(generator, player, failures)
-	if not corridors.find_children("*", "Light3D", true, false).is_empty():
-		failures.append("generated corridors still contain gameplay lights")
+	_validate_random_ceiling_variants(rooms, corridors, failures)
 	if navigation_region.navigation_mesh.get_polygon_count() <= 0:
 		failures.append("runtime NavigationMesh has no polygons")
 	if rooms.get_child_count() != 6:
@@ -96,6 +95,61 @@ func _validate_ready_map() -> void:
 		for failure: String in failures:
 			push_error(failure)
 		quit(1)
+
+
+func _validate_random_ceiling_variants(
+	rooms: Node,
+	corridors: Node,
+	failures: Array[String],
+) -> void:
+	var lighted_corridor_count := 0
+	var unlighted_corridor_count := 0
+	for room: Node3D in rooms.get_children():
+		var variant: String = room.get_meta("generated_ceiling_variant", "")
+		var ceiling := room.get_node_or_null("Structure/Ceiling")
+		if ceiling == null:
+			failures.append("%s has no generated ceiling" % room.name)
+			continue
+		_validate_ceiling_lights(room.name, variant, ceiling, failures)
+
+	for corridor: Node3D in corridors.get_children():
+		var variant: String = corridor.get_meta("generated_ceiling_variant", "")
+		if variant == "with_light":
+			lighted_corridor_count += 1
+		elif variant == "normal":
+			unlighted_corridor_count += 1
+		var ceiling := corridor.get_node_or_null("Ceiling/CeilingSurface")
+		if ceiling == null:
+			failures.append("%s has no generated ceiling" % corridor.name)
+			continue
+		_validate_ceiling_lights(corridor.name, variant, ceiling, failures)
+	if corridors.get_child_count() >= 2:
+		if lighted_corridor_count == 0:
+			failures.append("generated map has no lighted corridor ceiling")
+		if unlighted_corridor_count == 0:
+			failures.append("generated map has no unlighted corridor ceiling")
+
+
+func _validate_ceiling_lights(
+	owner_name: String,
+	variant: String,
+	ceiling: Node,
+	failures: Array[String],
+) -> void:
+	if variant != "normal" and variant != "with_light":
+		failures.append("%s has invalid ceiling variant metadata: %s" % [owner_name, variant])
+		return
+	var has_lights := not ceiling.find_children("*", "Light3D", true, false).is_empty()
+	if variant == "with_light" and not has_lights:
+		failures.append("%s selected a lighted ceiling without lights" % owner_name)
+	elif variant == "normal" and has_lights:
+		failures.append("%s selected a normal ceiling that contains lights" % owner_name)
+	for node: Node in ceiling.find_children("*", "Light3D", true, false):
+		var light := node as Light3D
+		if light.light_energy <= 0.0:
+			failures.append("%s contains a ceiling light with no emitted energy" % owner_name)
+		if light is OmniLight3D and (light as OmniLight3D).omni_range <= 0.0:
+			failures.append("%s contains a ceiling light with no effective range" % owner_name)
 
 
 func _validate_debug_lighting(failures: Array[String]) -> void:

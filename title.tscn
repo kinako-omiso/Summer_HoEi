@@ -115,7 +115,7 @@ theme_override_styles/normal = SubResource("StyleBox_button_normal")
 theme_override_styles/hover = SubResource("StyleBox_button_hover")
 theme_override_styles/pressed = SubResource("StyleBox_button_pressed")
 theme_override_styles/focus = SubResource("StyleBox_button_hover")
-text = "ゲームを終了"
+text = "ゲームをやめる"
 
 [connection signal="pressed" from="MarginContainer/Menu/StartButton" to="." method="_on_start_button_pressed"]
 [connection signal="pressed" from="MarginContainer/Menu/QuitButton" to="." method="_on_quit_button_pressed"]

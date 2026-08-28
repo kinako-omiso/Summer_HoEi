@@ -18,23 +18,30 @@ transform = Transform3D(1, 0, 0, 0, -1, 8.742278e-08, 0, -8.742278e-08, -1, 0, 0
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.0028076172, 0.018005371)
 shape = SubResource("BoxShape3D_mrimj")
 
-[node name="AreaLight3D" type="AreaLight3D" parent="." unique_id=1197619568 groups=["lights"]]
-transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, -3.2418044, -0.54173315, 3.1354303)
+[node name="CeilingLight01" type="OmniLight3D" parent="." unique_id=1197619568 groups=["lights"]]
+position = Vector3(-3.2418044, -0.54173315, 3.1354303)
 layers = 4
-light_energy = 2.0
-area_range = 15.0
+light_energy = 4.0
+omni_range = 10.0
+omni_attenuation = 1.25
 
-[node name="AreaLight3D2" type="AreaLight3D" parent="." unique_id=1002832731 groups=["lights"]]
-transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, 3.2005727, -0.54173315, 3.1354303)
+[node name="CeilingLight02" type="OmniLight3D" parent="." unique_id=1002832731 groups=["lights"]]
+position = Vector3(3.2005727, -0.54173315, 3.1354303)
 layers = 4
-area_range = 15.0
+light_energy = 4.0
+omni_range = 10.0
+omni_attenuation = 1.25
 
-[node name="AreaLight3D3" type="AreaLight3D" parent="." unique_id=1353352891 groups=["lights"]]
-transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, 3.2005727, -0.54173315, -3.2076015)
+[node name="CeilingLight03" type="OmniLight3D" parent="." unique_id=1353352891 groups=["lights"]]
+position = Vector3(3.2005727, -0.54173315, -3.2076015)
 layers = 4
-area_range = 15.0
+light_energy = 4.0
+omni_range = 10.0
+omni_attenuation = 1.25
 
-[node name="AreaLight3D4" type="AreaLight3D" parent="." unique_id=280335837 groups=["lights"]]
-transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, -3.2376049, -0.54173315, -3.2076015)
+[node name="CeilingLight04" type="OmniLight3D" parent="." unique_id=280335837 groups=["lights"]]
+position = Vector3(-3.2376049, -0.54173315, -3.2076015)
 layers = 4
-area_range = 15.0
+light_energy = 4.0
+omni_range = 10.0
+omni_attenuation = 1.25
