@@ -43,3 +43,4 @@ environment = SubResource("Environment_runtime")
 [node name="ResultUserInterface" parent="." unique_id=1197500075 instance=ExtResource("5_xcf3y")]
 
 [connection signal="hit" from="Player" to="." method="_on_player_hit"]
+[connection signal="survive" from="Player" to="." method="_on_player_survive"]

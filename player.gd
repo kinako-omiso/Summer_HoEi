@@ -3,9 +3,11 @@ extends CharacterBody3D
 
 # mainへの敵につかまった判定のシグナル
 signal hit
+signal survive
 
 @export var SPEED = 5.0
 const JUMP_VELOCITY = 4.5
+var game_clear = false
 
 # カメラ操作（Y軸回転はプレイヤーの回転としてカメラは追従させる）
 func _input(event):
@@ -21,6 +23,14 @@ func _physics_process(delta: float) -> void:
 			if _can_see_enemy(body):
 				die()
 				return
+	# ゴール（Area3D）との当たり判定
+	for area in $Area3D.get_overlapping_areas():
+		if area.is_in_group("galle"):
+			if _can_see_galle(area):
+				game_clear = true
+				_success()
+
+
 				
 	# Add the gravity.
 	if not is_on_floor():
@@ -61,6 +71,12 @@ func die():
 	hit.emit()
 	queue_free()
 
+func _success():
+	await get_tree().create_timer(3.0).timeout
+	survive.emit()
+	game_clear = false
+	
+
 
 # 敵との間に壁はあるか？
 func _can_see_enemy(enemy: Node3D) -> bool:
@@ -88,6 +104,36 @@ func _can_see_enemy(enemy: Node3D) -> bool:
 	var collider = result["collider"]
 
 	if collider == enemy:
+		return true
+
+	return false
+
+func _can_see_galle(galle: Node3D) -> bool:
+
+	var space_state := get_world_3d().direct_space_state
+
+	var from := global_position + Vector3.UP 
+	var to := galle.global_position + Vector3.UP 
+
+	var query := PhysicsRayQueryParameters3D.create(
+		from,
+		to
+	)
+
+	# GALLEのLayer と壁を見る
+	query.collision_mask = 4 | 8
+	query.collide_with_areas = true
+
+	query.exclude = [self]
+
+	var result := space_state.intersect_ray(query)
+
+	if result.is_empty():
+		return false
+
+	var collider = result["collider"]
+
+	if collider == galle:
 		return true
 
 	return false

@@ -29,6 +29,7 @@ enemy="敵"
 doors="ドア！！"
 player="プレイヤー"
 elevator_doors="停電時に開閉するエレベーター扉"
+galle="ゴールです"
 
 [input]
 

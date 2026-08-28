@@ -38,7 +38,7 @@ grow_vertical = 2
 
 [node name="TitleLabel" type="Label" parent="Control/VBoxContainer" unique_id=1020688991]
 layout_mode = 2
-theme_override_font_sizes/font_size = 200
+theme_override_font_sizes/font_size = 180
 text = "t"
 
 [node name="ScoreLabel" type="Label" parent="Control/VBoxContainer" unique_id=1917575868]
