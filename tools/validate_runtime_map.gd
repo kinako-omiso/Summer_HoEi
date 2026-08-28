@@ -102,6 +102,8 @@ func _validate_random_ceiling_variants(
 	corridors: Node,
 	failures: Array[String],
 ) -> void:
+	var lighted_corridor_count := 0
+	var unlighted_corridor_count := 0
 	for room: Node3D in rooms.get_children():
 		var variant: String = room.get_meta("generated_ceiling_variant", "")
 		var ceiling := room.get_node_or_null("Structure/Ceiling")
@@ -112,11 +114,20 @@ func _validate_random_ceiling_variants(
 
 	for corridor: Node3D in corridors.get_children():
 		var variant: String = corridor.get_meta("generated_ceiling_variant", "")
+		if variant == "with_light":
+			lighted_corridor_count += 1
+		elif variant == "normal":
+			unlighted_corridor_count += 1
 		var ceiling := corridor.get_node_or_null("Ceiling/CeilingSurface")
 		if ceiling == null:
 			failures.append("%s has no generated ceiling" % corridor.name)
 			continue
 		_validate_ceiling_lights(corridor.name, variant, ceiling, failures)
+	if corridors.get_child_count() >= 2:
+		if lighted_corridor_count == 0:
+			failures.append("generated map has no lighted corridor ceiling")
+		if unlighted_corridor_count == 0:
+			failures.append("generated map has no unlighted corridor ceiling")
 
 
 func _validate_ceiling_lights(

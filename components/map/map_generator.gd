@@ -312,13 +312,15 @@ func _instantiate_layout(layout: Dictionary) -> void:
 	add_child(elevator_root)
 
 	var corridors: Array = layout["corridors"]
+	var corridor_light_variants := _build_corridor_light_variants(corridors.size())
 	for corridor_index: int in range(corridors.size()):
 		var corridor: Dictionary = corridors[corridor_index]
 		_add_corridor_edge(
 			corridors_root,
 			corridor["from"],
 			corridor["to"],
-			"RoomConnection%02d" % (corridor_index + 1)
+			"RoomConnection%02d" % (corridor_index + 1),
+			corridor_light_variants[corridor_index],
 		)
 
 	var room_instances: Array[Node3D] = []
@@ -566,7 +568,27 @@ func _canonical_breaker_yaw(side: String) -> float:
 	return 0.0
 
 
-func _add_corridor_edge(parent: Node3D, from: Vector2, to: Vector2, edge_name: String) -> void:
+func _build_corridor_light_variants(corridor_count: int) -> Array[bool]:
+	var variants: Array[bool] = []
+	for _corridor_index: int in range(corridor_count):
+		variants.append(_rng.randi_range(0, 1) == 1)
+	if corridor_count >= 2:
+		# Keep the placement random while guaranteeing that a generated map
+		# contains both a lighted and an unlighted corridor ceiling.
+		if not variants.has(true):
+			variants[_rng.randi_range(0, corridor_count - 1)] = true
+		if not variants.has(false):
+			variants[_rng.randi_range(0, corridor_count - 1)] = false
+	return variants
+
+
+func _add_corridor_edge(
+	parent: Node3D,
+	from: Vector2,
+	to: Vector2,
+	edge_name: String,
+	ceiling_has_lights: bool,
+) -> void:
 	var length := from.distance_to(to)
 	var direction := (to - from).normalized()
 	var center := from.lerp(to, 0.5)
@@ -575,7 +597,6 @@ func _add_corridor_edge(parent: Node3D, from: Vector2, to: Vector2, edge_name: S
 	parent.add_child(module)
 	module.position = _to_world(center)
 	module.rotation.y = _yaw_from_direction(direction)
-	var ceiling_has_lights := _rng.randi_range(0, 1) == 1
 	var ceiling_scene: PackedScene = (
 		CORRIDOR_CEILING_WITH_LIGHT if ceiling_has_lights else CORRIDOR_CEILING_NORMAL
 	)
