@@ -9,13 +9,13 @@ func _ready() -> void:
 # ゲームオーバー時に呼ぶ関数
 func show_game_over() -> void:
 	title_label.text = "GAME OVER"
-	retry_button.text = "Try Again"
+	retry_button.text = "再挑戦"
 	_popup()
 
 # ゲームクリア時に呼ぶ関数
 func show_game_clear() -> void:
 	title_label.text = "GAME CLEAR!"
-	retry_button.text = "Play Again"
+	retry_button.text = "もう一度遊ぶ"
 	_popup()
 
 # 共通の表示・一時停止処理
