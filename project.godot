@@ -31,6 +31,10 @@ player="プレイヤー"
 elevator_doors="停電時に開閉するエレベーター扉"
 galle="ゴールです"
 
+[gui]
+
+theme/custom_font="uid://c12p72l1wt2es"
+
 [input]
 
 move_left={
