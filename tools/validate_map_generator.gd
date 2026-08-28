@@ -6,6 +6,10 @@ const ROOM_TEMPLATE := preload("res://components/rooms/room_template.tscn")
 const ROOM_A := preload("res://components/rooms/room_a_office.tscn")
 const ROOM_B := preload("res://components/rooms/room_b_storage.tscn")
 const CENTERED_DOOR_WALL := preload("res://components/map/centered_wall_with_door.tscn")
+const ELEVATOR_ENTRANCE_WALL := preload(
+	"res://components/map/centered_wall_with_elevator_door.tscn"
+)
+const ELEVATOR_DOOR := preload("res://assets/3DModel/elevator_door.tscn")
 const ROOM_COUNT := 6
 const MINIMUM_LENGTH := 3.0
 const MAXIMUM_LENGTH := 20.0
@@ -39,6 +43,7 @@ func _run_validation() -> void:
 	_validate_room_template(failures)
 	_validate_room_floor_alignment(failures)
 	_validate_centered_door_fit(generator, failures)
+	_validate_elevator_door_fit(generator, failures)
 	_validate_authored_breaker_transforms(generator, failures)
 	_validate_authored_wall_preservation(generator, failures)
 
@@ -162,6 +167,26 @@ func _validate_centered_door_fit(generator: Node, failures: Array[String]) -> vo
 		failures.append("centered door has a gap at its left edge")
 	if absf(right_bounds.position.x - door_bounds.end.x) > 0.02:
 		failures.append("centered door has a gap at its right edge")
+	wall.free()
+
+
+func _validate_elevator_door_fit(generator: Node, failures: Array[String]) -> void:
+	var wall := ELEVATOR_ENTRANCE_WALL.instantiate() as Node3D
+	generator.add_child(wall)
+	var door := ELEVATOR_DOOR.instantiate() as Node3D
+	# Generated walls are centered at y=3.15, while the elevator door root is
+	# centered at y=2.622 in the same entrance coordinate system.
+	door.position = Vector3(0.0, 2.622 - 3.15, 0.0)
+	wall.add_child(door)
+
+	var panel_shape := door.get_node("DoorPanel/CollisionShape3D") as CollisionShape3D
+	var shape_to_wall := wall.global_transform.affine_inverse() * panel_shape.global_transform
+	var door_bounds: AABB = shape_to_wall * panel_shape.shape.get_debug_mesh().get_aabb()
+	var header_bounds := _collision_bounds_in_wall_space(
+		wall, "WallHeader/CollisionShape3D"
+	)
+	if door_bounds.end.y > header_bounds.position.y:
+		failures.append("elevator door is taller than its generated wall opening")
 	wall.free()
 
 

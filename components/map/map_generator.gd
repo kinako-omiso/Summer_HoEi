@@ -31,6 +31,9 @@ const SIDE_VECTORS := {
 const CORRIDOR_MODULE := preload("res://components/map/corridor_module.tscn")
 const ROOM_WALL := preload("res://assets/3DModel/wall_no_door.tscn")
 const CENTERED_DOOR_WALL := preload("res://components/map/centered_wall_with_door.tscn")
+const ELEVATOR_ENTRANCE_WALL := preload(
+	"res://components/map/centered_wall_with_elevator_door.tscn"
+)
 const ELEVATOR := preload("res://assets/3DModel/elevator.tscn")
 const ELEVATOR_DOOR := preload("res://assets/3DModel/elevator_door.tscn")
 
@@ -366,7 +369,10 @@ func _configure_room_walls(room: Node3D, entrances: Array, elevator_side: String
 			# every saved transform, material override, and custom child node.
 			if authored_wall != null:
 				authored_wall.free()
-			wall = CENTERED_DOOR_WALL.instantiate() as Node3D
+			var entrance_scene := (
+				ELEVATOR_ENTRANCE_WALL if side == elevator_side else CENTERED_DOOR_WALL
+			)
+			wall = entrance_scene.instantiate() as Node3D
 			wall.name = "Entrance%s" % side.capitalize()
 		elif authored_wall == null:
 			# Templates may intentionally omit one side. Fill it only when the

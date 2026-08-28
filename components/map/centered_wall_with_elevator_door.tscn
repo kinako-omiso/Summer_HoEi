@@ -1,0 +1,17 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="PackedScene" path="res://assets/3DModel/wall_no_door.tscn" id="1_wall"]
+
+[node name="CenteredWallWithElevatorDoor" type="Node3D"]
+
+[node name="WallLeft" parent="." instance=ExtResource("1_wall")]
+position = Vector3(-4, 0, 0)
+scale = Vector3(0.428571, 1, 1)
+
+[node name="WallRight" parent="." instance=ExtResource("1_wall")]
+position = Vector3(4, 0, 0)
+scale = Vector3(0.428571, 1, 1)
+
+[node name="WallHeader" parent="." instance=ExtResource("1_wall")]
+position = Vector3(0, 2.5, 0)
+scale = Vector3(0.142857, 0.166667, 1)
