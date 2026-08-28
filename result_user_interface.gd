@@ -30,4 +30,5 @@ func _on_retry_button_pressed() -> void:
 
 # タイトルボタン押下時
 func _on_title_button_pressed() -> void:
-	pass
+	get_tree().paused = false
+	get_tree().change_scene_to_file("res://title.tscn")
