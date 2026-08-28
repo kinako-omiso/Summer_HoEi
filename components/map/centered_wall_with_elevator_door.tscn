@@ -5,13 +5,13 @@
 [node name="CenteredWallWithElevatorDoor" type="Node3D"]
 
 [node name="WallLeft" parent="." instance=ExtResource("1_wall")]
-position = Vector3(-4.2, 0, 0)
-scale = Vector3(0.4, 1, 1)
+position = Vector3(-4.170869, 0, 0)
+scale = Vector3(0.404162, 1, 1)
 
 [node name="WallRight" parent="." instance=ExtResource("1_wall")]
-position = Vector3(4.2, 0, 0)
-scale = Vector3(0.4, 1, 1)
+position = Vector3(4.170869, 0, 0)
+scale = Vector3(0.404162, 1, 1)
 
 [node name="WallHeader" parent="." instance=ExtResource("1_wall")]
-position = Vector3(0, 2.5, 0)
-scale = Vector3(0.2, 0.166667, 1)
+position = Vector3(0, 2.309953, 0)
+scale = Vector3(0.191677, 0.230016, 1)

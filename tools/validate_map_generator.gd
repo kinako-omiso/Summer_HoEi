@@ -174,28 +174,29 @@ func _validate_elevator_door_fit(generator: Node, failures: Array[String]) -> vo
 	var wall := ELEVATOR_ENTRANCE_WALL.instantiate() as Node3D
 	generator.add_child(wall)
 	var door := ELEVATOR_DOOR.instantiate() as Node3D
-	# Generated walls are centered at y=3.15, while the elevator door root is
-	# centered at y=2.622 in the same entrance coordinate system.
-	door.position = Vector3(0.0, 2.622 - 3.15, 0.0)
+	# Match the relative transforms used by MapGenerator.
+	door.position = Vector3(0.0, 2.469953 - 3.15, 0.0)
 	wall.add_child(door)
 
 	var door_bounds := AABB()
-	for panel_name: String in ["DoorPanelLeft", "DoorPanelRight"]:
-		var panel_shape := door.get_node(
-			"%s/CollisionShape3D" % panel_name
-		) as CollisionShape3D
-		var shape_to_wall := wall.global_transform.affine_inverse() * panel_shape.global_transform
-		var panel_bounds: AABB = shape_to_wall * panel_shape.shape.get_debug_mesh().get_aabb()
-		door_bounds = panel_bounds if door_bounds.size == Vector3.ZERO else door_bounds.merge(panel_bounds)
+	for mesh: MeshInstance3D in door.find_children("*", "MeshInstance3D", true, false):
+		var mesh_to_wall := wall.global_transform.affine_inverse() * mesh.global_transform
+		var mesh_bounds: AABB = mesh_to_wall * mesh.get_aabb()
+		door_bounds = mesh_bounds if door_bounds.size == Vector3.ZERO else door_bounds.merge(mesh_bounds)
 	var header_bounds := _collision_bounds_in_wall_space(
 		wall, "WallHeader/CollisionShape3D"
 	)
 	var left_bounds := _collision_bounds_in_wall_space(wall, "WallLeft/CollisionShape3D")
 	var right_bounds := _collision_bounds_in_wall_space(wall, "WallRight/CollisionShape3D")
-	if door_bounds.end.y > header_bounds.position.y:
-		failures.append("elevator door is taller than its generated wall opening")
-	if door_bounds.position.x < left_bounds.end.x or door_bounds.end.x > right_bounds.position.x:
-		failures.append("two-panel elevator door is wider than its generated wall opening")
+	var maximum_frame_overlap := 0.025
+	if absf(header_bounds.position.y - door_bounds.end.y) > maximum_frame_overlap:
+		failures.append("elevator door does not meet the top of its generated opening")
+	if absf(left_bounds.end.x - door_bounds.position.x) > maximum_frame_overlap:
+		failures.append("elevator door does not meet the left of its generated opening")
+	if absf(right_bounds.position.x - door_bounds.end.x) > maximum_frame_overlap:
+		failures.append("elevator door does not meet the right of its generated opening")
+	if absf(left_bounds.position.y - door_bounds.position.y) > 0.01:
+		failures.append("elevator door does not meet the bottom of its generated opening")
 	wall.free()
 
 
@@ -387,5 +388,5 @@ func _validate_instantiated_map(generator: Node, failures: Array[String]) -> voi
 	var elevator_door := generator.get_node_or_null("ElevatorTerminal/ElevatorDoor") as Node3D
 	if elevator_door == null:
 		failures.append("closed elevator door is missing")
-	elif not elevator_door.position.is_equal_approx(Vector3(0.0, 2.622, 0.0)):
+	elif not elevator_door.position.is_equal_approx(Vector3(0.0, 2.469953, 0.0)):
 		failures.append("closed elevator door is offset from the elevator entrance")
