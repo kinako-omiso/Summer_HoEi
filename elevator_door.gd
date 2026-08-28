@@ -1,17 +1,18 @@
 extends Node3D
 
 
-@export var open_offset := Vector3(-1.5, 0.0, 0.0)
-@export var closed_position := Vector3.ZERO
+@export_range(0.5, 3.0, 0.05) var slide_distance := 1.4
 @export_range(0.05, 5.0, 0.05) var animation_duration := 0.6
 @export_flags_3d_render var render_layers: int = 4
 
-@onready var door_panel: AnimatableBody3D = $DoorPanel
+@onready var left_door_panel: AnimatableBody3D = $DoorPanelLeft
+@onready var right_door_panel: AnimatableBody3D = $DoorPanelRight
 @onready var proximity_area: Area3D = $ProximityArea
 
 var is_power_out := false
 var is_open := false
-var _closed_position := Vector3.ZERO
+var _left_closed_position := Vector3.ZERO
+var _right_closed_position := Vector3.ZERO
 var _movement_tween: Tween
 var _nearby_players: Dictionary = {}
 
@@ -19,9 +20,10 @@ var _nearby_players: Dictionary = {}
 func _ready() -> void:
 	is_power_out = false
 	is_open = false
-	_closed_position = closed_position
-	door_panel.position = _closed_position
-	_apply_render_layers(door_panel)
+	_left_closed_position = left_door_panel.position
+	_right_closed_position = right_door_panel.position
+	_apply_render_layers(left_door_panel)
+	_apply_render_layers(right_door_panel)
 	proximity_area.body_entered.connect(_on_proximity_body_entered)
 	proximity_area.body_exited.connect(_on_proximity_body_exited)
 
@@ -48,20 +50,29 @@ func _update_door_state() -> void:
 	if should_open == is_open:
 		return
 	is_open = should_open
-	_move_door(_closed_position + open_offset if is_open else _closed_position)
+	_move_doors(
+		_left_closed_position + Vector3.LEFT * slide_distance if is_open else _left_closed_position,
+		_right_closed_position + Vector3.RIGHT * slide_distance if is_open else _right_closed_position,
+	)
 
 
 func _player_is_nearby() -> bool:
 	return not _nearby_players.is_empty()
 
 
-func _move_door(target_position: Vector3) -> void:
+func _move_doors(left_target: Vector3, right_target: Vector3) -> void:
 	if _movement_tween != null and _movement_tween.is_valid():
 		_movement_tween.kill()
 	_movement_tween = create_tween()
 	_movement_tween.set_process_mode(Tween.TWEEN_PROCESS_PHYSICS)
 	_movement_tween.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	_movement_tween.tween_property(door_panel, "position", target_position, animation_duration)
+	_movement_tween.set_parallel(true)
+	_movement_tween.tween_property(
+		left_door_panel, "position", left_target, animation_duration
+	)
+	_movement_tween.tween_property(
+		right_door_panel, "position", right_target, animation_duration
+	)
 
 
 func _apply_render_layers(node: Node) -> void:

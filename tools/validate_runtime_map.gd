@@ -8,6 +8,7 @@ const TIMEOUT_MSEC := 120_000
 var _main: Node
 var _started := false
 var _map_ready := false
+var _validation_started := false
 var _ready_seed := 0
 var _started_at_msec := 0
 
@@ -24,8 +25,10 @@ func _process(_delta: float) -> bool:
 		return false
 
 	if _map_ready:
-		_validate_ready_map()
-		return true
+		if not _validation_started:
+			_validation_started = true
+			_validate_ready_map()
+		return false
 
 	if Time.get_ticks_msec() - _started_at_msec > TIMEOUT_MSEC:
 		push_error("Runtime map validation timed out while baking NavigationMesh.")
@@ -52,6 +55,8 @@ func _validate_ready_map() -> void:
 	var corridors := generator.get_node("Corridors")
 	_validate_debug_lighting(failures)
 	_validate_visible_doors(generator, player, failures)
+	_validate_elevator_door(generator, failures)
+	await _validate_elevator_door_motion(generator, player, failures)
 	if not corridors.find_children("*", "Light3D", true, false).is_empty():
 		failures.append("generated corridors still contain gameplay lights")
 	if navigation_region.navigation_mesh.get_polygon_count() <= 0:
@@ -144,3 +149,45 @@ func _validate_visible_doors(generator: Node, player: CharacterBody3D, failures:
 			failures.append("%s has no mesh visible to PlayerCamera" % door.get_path())
 		elif combined_bounds.size.length() < 0.1:
 			failures.append("%s has an empty visual AABB" % door.get_path())
+
+
+func _validate_elevator_door(generator: Node, failures: Array[String]) -> void:
+	var door := generator.get_node("ElevatorTerminal/ElevatorDoor") as Node3D
+	var panels := door.find_children("DoorPanel*", "AnimatableBody3D", false, false)
+	if panels.size() != 2:
+		failures.append("elevator does not contain two sliding door panels")
+	for panel: AnimatableBody3D in panels:
+		var expected_position := door.global_transform * panel.position
+		if panel.global_position.distance_to(expected_position) > 0.01:
+			failures.append("%s did not inherit its positioned parent transform" % panel.name)
+		if panel.global_position.y < 0.0:
+			failures.append("%s remained below the floor" % panel.name)
+
+
+func _validate_elevator_door_motion(
+	generator: Node,
+	player: CharacterBody3D,
+	failures: Array[String],
+) -> void:
+	var door := generator.get_node("ElevatorTerminal/ElevatorDoor") as Node3D
+	var left_panel := door.get_node("DoorPanelLeft") as AnimatableBody3D
+	var right_panel := door.get_node("DoorPanelRight") as AnimatableBody3D
+	var left_closed := left_panel.position
+	var right_closed := right_panel.position
+	var slide_distance: float = door.get("slide_distance")
+	var animation_duration: float = door.get("animation_duration")
+
+	door.call("on_power_outage")
+	door.call("_on_proximity_body_entered", player)
+	await create_timer(animation_duration + 0.1).timeout
+	if not left_panel.position.is_equal_approx(left_closed + Vector3.LEFT * slide_distance):
+		failures.append("left elevator door did not slide left when opening")
+	if not right_panel.position.is_equal_approx(right_closed + Vector3.RIGHT * slide_distance):
+		failures.append("right elevator door did not slide right when opening")
+
+	door.call("_on_proximity_body_exited", player)
+	await create_timer(animation_duration + 0.1).timeout
+	if not left_panel.position.is_equal_approx(left_closed):
+		failures.append("left elevator door did not return to its closed position")
+	if not right_panel.position.is_equal_approx(right_closed):
+		failures.append("right elevator door did not return to its closed position")

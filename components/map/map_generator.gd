@@ -31,6 +31,9 @@ const SIDE_VECTORS := {
 const CORRIDOR_MODULE := preload("res://components/map/corridor_module.tscn")
 const ROOM_WALL := preload("res://assets/3DModel/wall_no_door.tscn")
 const CENTERED_DOOR_WALL := preload("res://components/map/centered_wall_with_door.tscn")
+const ELEVATOR_ENTRANCE_WALL := preload(
+	"res://components/map/centered_wall_with_elevator_door.tscn"
+)
 const ELEVATOR := preload("res://assets/3DModel/elevator.tscn")
 const ELEVATOR_DOOR := preload("res://assets/3DModel/elevator_door.tscn")
 
@@ -367,7 +370,10 @@ func _configure_room_walls(room: Node3D, entrances: Array, elevator_side: String
 			# every saved transform, material override, and custom child node.
 			if authored_wall != null:
 				authored_wall.free()
-			wall = CENTERED_DOOR_WALL.instantiate() as Node3D
+			var entrance_scene := (
+				ELEVATOR_ENTRANCE_WALL if side == elevator_side else CENTERED_DOOR_WALL
+			)
+			wall = entrance_scene.instantiate() as Node3D
 			wall.name = "Entrance%s" % side.capitalize()
 		elif authored_wall == null:
 			# Templates may intentionally omit one side. Fill it only when the
@@ -573,8 +579,11 @@ func _add_elevator_terminal(parent: Node3D, door_point: Vector2, yaw: float) -> 
 
 	var door := ELEVATOR_DOOR.instantiate() as Node3D
 	door.name = "ElevatorDoor"
+	door.position = Vector3(0.0, 2.469953, 0.0)
+	# DoorPanel is an AnimatableBody3D, so it captures its global transform when
+	# entering the tree. Position its parent first to keep the closed panel at
+	# the elevator entrance instead of synchronized below the floor.
 	parent.add_child(door)
-	door.position = Vector3(0.0, 2.622, 0.0)
 
 
 func _prune_candidate_group(room: Node, group_name: StringName) -> int:
