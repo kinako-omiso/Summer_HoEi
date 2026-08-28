@@ -9,7 +9,7 @@
 radius = 1.5776367
 
 [node name="Player" type="CharacterBody3D" unique_id=943185070 groups=["player"]]
-collision_mask = 12
+collision_mask = 4
 script = ExtResource("1_onrkg")
 
 [node name="pivod" type="Node3D" parent="." unique_id=270018981]
@@ -35,7 +35,7 @@ spot_angle = 30.0
 [node name="Area3D" type="Area3D" parent="." unique_id=1007189964]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0110434, 0)
 collision_layer = 0
-collision_mask = 2
+collision_mask = 10
 monitorable = false
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Area3D" unique_id=1434938827]

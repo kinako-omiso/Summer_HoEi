@@ -105,3 +105,9 @@ func _on_player_hit() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	if result_ui:
 		result_ui.show_game_over()
+
+func _on_player_survive() -> void:
+	print("success")
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	if result_ui:
+			result_ui.show_game_clear()

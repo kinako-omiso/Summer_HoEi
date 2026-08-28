@@ -1,7 +1,7 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene format=3 uid="uid://d3b1kuq802lkn"]
 
-[ext_resource type="PackedScene" path="res://assets/3DModel/elevator.glb" id="1_model"]
-[ext_resource type="Script" path="res://elevator.gd" id="2_script"]
+[ext_resource type="PackedScene" uid="uid://dvv7njjtkk0mm" path="res://assets/3DModel/elevator.glb" id="1_model"]
+[ext_resource type="Script" uid="uid://c3d4gujhj8pmj" path="res://elevator.gd" id="2_script"]
 
 [sub_resource type="BoxShape3D" id="BoxShape_side"]
 size = Vector3(0.18, 6, 3.140139)
@@ -15,30 +15,42 @@ size = Vector3(3.532126, 0.18, 3.140139)
 [sub_resource type="BoxShape3D" id="BoxShape_ceiling"]
 size = Vector3(3.532126, 0.18, 3.140139)
 
-[node name="Elevator" type="StaticBody3D"]
+[sub_resource type="BoxShape3D" id="BoxShape3D_k8684"]
+size = Vector3(2.135971, 4.901306, 2.3267822)
+
+[node name="Elevator" type="StaticBody3D" unique_id=150359911]
 collision_layer = 4
 collision_mask = 0
 script = ExtResource("2_script")
 
-[node name="Model" parent="." instance=ExtResource("1_model")]
+[node name="Model" parent="." unique_id=1002491280 instance=ExtResource("1_model")]
 transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, -2.280276)
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
-position = Vector3(-1.676063, 0, -2.710207)
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1449012569]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.676063, 0, -2.710207)
 shape = SubResource("BoxShape_side")
 
-[node name="CollisionShapeRight" type="CollisionShape3D" parent="."]
-position = Vector3(1.676063, 0, -2.710207)
+[node name="CollisionShapeRight" type="CollisionShape3D" parent="." unique_id=1543572120]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.676063, 0, -2.710207)
 shape = SubResource("BoxShape_side")
 
-[node name="CollisionShapeBack" type="CollisionShape3D" parent="."]
-position = Vector3(0, 0, -1.050138)
+[node name="CollisionShapeBack" type="CollisionShape3D" parent="." unique_id=2100650561]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1.050138)
 shape = SubResource("BoxShape_back")
 
-[node name="CollisionShapeFloor" type="CollisionShape3D" parent="."]
-position = Vector3(0, -3.09, -2.710207)
+[node name="CollisionShapeFloor" type="CollisionShape3D" parent="." unique_id=1619261338]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -3.09, -2.710207)
 shape = SubResource("BoxShape_floor")
 
-[node name="CollisionShapeCeiling" type="CollisionShape3D" parent="."]
-position = Vector3(0, 3.09, -2.710207)
+[node name="CollisionShapeCeiling" type="CollisionShape3D" parent="." unique_id=1828366268]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.09, -2.710207)
 shape = SubResource("BoxShape_ceiling")
+
+[node name="GallePost" type="Area3D" parent="." unique_id=529530818 groups=["galle"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -2.9451063)
+collision_layer = 8
+collision_mask = 0
+
+[node name="Galle" type="CollisionShape3D" parent="GallePost" unique_id=980165152]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.09018707, -0.12069702, 0.2991333)
+shape = SubResource("BoxShape3D_k8684")
