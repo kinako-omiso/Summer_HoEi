@@ -8,6 +8,7 @@ signal runtime_map_ready(seed_value: int)
 @onready var player: CharacterBody3D = $Player
 @onready var monster: CharacterBody3D = $demomonster
 @onready var world_environment: WorldEnvironment = $WorldEnvironment
+@onready var result_ui: CanvasLayer = $ResultUserInterface
 
 var camera_change := 1
 var is_runtime_map_ready := false
@@ -101,3 +102,6 @@ func toggle_debug_lighting() -> void:
 
 func _on_player_hit() -> void:
 	print("you die")
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	if result_ui:
+		result_ui.show_game_over()

@@ -1,0 +1,62 @@
+[gd_scene format=3 uid="uid://dt4qgt2esabt6"]
+
+[ext_resource type="Script" uid="uid://dl83sslmoj0cc" path="res://result_user_interface.gd" id="1_wy113"]
+
+[node name="ResultUserInterface" type="CanvasLayer" unique_id=1197500075]
+script = ExtResource("1_wy113")
+
+[node name="Control" type="Control" parent="." unique_id=511016717]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ColorRect" type="ColorRect" parent="Control" unique_id=613654782]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.45490196)
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Control" unique_id=2022881296]
+layout_mode = 1
+anchors_preset = 13
+anchor_left = 0.5
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -39.0
+offset_top = -2.0
+offset_right = 40.0
+offset_bottom = -2.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="TitleLabel" type="Label" parent="Control/VBoxContainer" unique_id=1020688991]
+layout_mode = 2
+theme_override_font_sizes/font_size = 200
+text = "t"
+
+[node name="ScoreLabel" type="Label" parent="Control/VBoxContainer" unique_id=1917575868]
+layout_mode = 2
+theme_override_font_sizes/font_size = 100
+text = " "
+
+[node name="RetryButton" type="Button" parent="Control/VBoxContainer" unique_id=1003826043]
+process_mode = 3
+layout_mode = 2
+theme_override_font_sizes/font_size = 64
+text = "t"
+
+[node name="TitleButton" type="Button" parent="Control/VBoxContainer" unique_id=232903561]
+process_mode = 3
+layout_mode = 2
+theme_override_font_sizes/font_size = 64
+text = "Back To Title"
+
+[connection signal="pressed" from="Control/VBoxContainer/RetryButton" to="." method="_on_retry_button_pressed"]
+[connection signal="pressed" from="Control/VBoxContainer/TitleButton" to="." method="_on_title_button_pressed"]

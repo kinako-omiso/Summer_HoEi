@@ -4,6 +4,7 @@
 [ext_resource type="PackedScene" uid="uid://c4y6xxtcor5q3" path="res://player.tscn" id="2_player"]
 [ext_resource type="PackedScene" uid="uid://dqwbx620higo1" path="res://demomonster/demomonster.tscn" id="3_monster"]
 [ext_resource type="PackedScene" path="res://components/map/map_generator.tscn" id="4_generator"]
+[ext_resource type="PackedScene" uid="uid://dt4qgt2esabt6" path="res://result_user_interface.tscn" id="5_xcf3y"]
 
 [sub_resource type="NavigationMesh" id="NavigationMesh_runtime"]
 geometry_parsed_geometry_type = 1
@@ -38,5 +39,7 @@ player = NodePath("../Player")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=548839510]
 environment = SubResource("Environment_runtime")
+
+[node name="ResultUserInterface" parent="." unique_id=1197500075 instance=ExtResource("5_xcf3y")]
 
 [connection signal="hit" from="Player" to="." method="_on_player_hit"]
