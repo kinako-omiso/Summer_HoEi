@@ -28,6 +28,11 @@ const SIDE_VECTORS := {
 	SIDE_WEST: Vector2(-1.0, 0.0),
 }
 
+const CORRIDOR_HALF_WIDTH := 3.87
+const ELEVATOR_FOOTPRINT_WIDTH := 3.532126
+const ELEVATOR_OPENING_WIDTH := 2.683478
+const CORRIDOR_SIDE_LEFT := "left"
+const CORRIDOR_SIDE_RIGHT := "right"
 const CORRIDOR_MODULE := preload("res://components/map/corridor_module.tscn")
 const CORRIDOR_CEILING_NORMAL := preload(
 	"res://assets/3DModel/corridor_ceiling_without_light.tscn"
@@ -172,21 +177,32 @@ func _try_build_compact_layout() -> Dictionary:
 			"length": start.distance_to(end),
 			"first_room": first_index,
 			"second_room": second_index,
+			"elevator_side": "",
+			"elevator_role": "",
 		})
 
-	var elevator_attachments := _choose_elevator_attachments(cells, room_specs)
+	var elevator_attachments := _choose_elevator_attachments(
+		cells,
+		room_specs,
+		corridor_specs,
+	)
 	if elevator_attachments.is_empty():
 		return {}
 	var start_elevator: Dictionary = elevator_attachments["start"]
 	var goal_elevator: Dictionary = elevator_attachments["goal"]
 	for role: String in ["start", "goal"]:
 		var attachment: Dictionary = elevator_attachments[role]
-		var elevator_room_index: int = attachment["room_index"]
-		var elevator_side: String = attachment["side"]
-		var elevator_entrances: Array = room_specs[elevator_room_index]["entrances"]
-		elevator_entrances.append(elevator_side)
-		room_specs[elevator_room_index]["elevator_side"] = elevator_side
-		room_specs[elevator_room_index]["elevator_role"] = role
+		if attachment["mode"] == "room":
+			var room_index: int = attachment["room_index"]
+			var elevator_side: String = attachment["side"]
+			var elevator_entrances: Array = room_specs[room_index]["entrances"]
+			elevator_entrances.append(elevator_side)
+			room_specs[room_index]["elevator_side"] = elevator_side
+			room_specs[room_index]["elevator_role"] = role
+		else:
+			var corridor_index: int = attachment["corridor_index"]
+			corridor_specs[corridor_index]["elevator_side"] = attachment["side"]
+			corridor_specs[corridor_index]["elevator_role"] = role
 
 	return {
 		"seed": generated_seed,
@@ -194,11 +210,8 @@ func _try_build_compact_layout() -> Dictionary:
 		"rooms": room_specs,
 		"corridors": corridor_specs,
 		"connections": connections,
-		"elevator_mode": "room",
-		"start_elevator_room_index": start_elevator["room_index"],
-		"start_elevator_side": start_elevator["side"],
-		"goal_elevator_room_index": goal_elevator["room_index"],
-		"goal_elevator_side": goal_elevator["side"],
+		"start_elevator": start_elevator,
+		"goal_elevator": goal_elevator,
 	}
 
 
@@ -272,6 +285,7 @@ func _select_room_connections(cells: Array[Vector2i]) -> Array[Dictionary]:
 func _choose_elevator_attachments(
 	cells: Array[Vector2i],
 	room_specs: Array[Dictionary],
+	corridor_specs: Array[Dictionary],
 ) -> Dictionary:
 	var occupied: Dictionary = {}
 	for cell: Vector2i in cells:
@@ -283,39 +297,93 @@ func _choose_elevator_attachments(
 		if entrances.size() >= 3:
 			continue
 		var cell: Vector2i = cells[room_index]
+		var room_origin: Vector2 = room_specs[room_index]["origin"]
 		for side: String in ALL_SIDES:
 			if entrances.has(side):
 				continue
 			var neighbor_cell := cell + _side_grid_offset(side)
 			if not _cell_is_inside_grid(neighbor_cell) or not occupied.has(neighbor_cell):
-				candidates.append({"room_index": room_index, "side": side})
-	if candidates.is_empty():
+				var outward := _side_vector(side)
+				candidates.append({
+					"mode": "room",
+					"room_index": room_index,
+					"side": side,
+					"host_key": "room:%d" % room_index,
+					"position": room_origin + outward * ROOM_WALL_OFFSET,
+				})
+
+	for corridor_index: int in range(corridor_specs.size()):
+		var corridor: Dictionary = corridor_specs[corridor_index]
+		var corridor_length: float = corridor["length"]
+		# A short corridor cannot contain the full elevator footprint. Reject
+		# it here and let selection retry with another candidate.
+		if corridor_length + 0.001 < ELEVATOR_FOOTPRINT_WIDTH:
+			continue
+		var from: Vector2 = corridor["from"]
+		var to: Vector2 = corridor["to"]
+		var direction := (to - from).normalized()
+		var center := from.lerp(to, 0.5)
+		var right := Vector2(direction.y, -direction.x)
+		for side: String in [CORRIDOR_SIDE_LEFT, CORRIDOR_SIDE_RIGHT]:
+			var outward := -right if side == CORRIDOR_SIDE_LEFT else right
+			candidates.append({
+				"mode": "corridor",
+				"corridor_index": corridor_index,
+				"side": side,
+				"host_key": "corridor:%d" % corridor_index,
+				"position": center + outward * CORRIDOR_HALF_WIDTH,
+			})
+
+	if candidates.size() < 2:
 		return {}
 
-	# Keep start and goal in different rooms and prefer the pair with the
-	# greatest grid separation so traversing the map is meaningful.
-	var best_pairs: Array[Array] = []
-	var greatest_distance_squared := -1
-	for first_index: int in range(candidates.size()):
-		var first: Dictionary = candidates[first_index]
-		for second_index: int in range(first_index + 1, candidates.size()):
-			var second: Dictionary = candidates[second_index]
-			if first["room_index"] == second["room_index"]:
-				continue
-			var first_cell: Vector2i = cells[first["room_index"]]
-			var second_cell: Vector2i = cells[second["room_index"]]
-			var distance_squared := (first_cell - second_cell).length_squared()
-			if distance_squared > greatest_distance_squared:
-				greatest_distance_squared = distance_squared
-				best_pairs = [[first, second]]
-			elif distance_squared == greatest_distance_squared:
-				best_pairs.append([first, second])
-	if best_pairs.is_empty():
+	var start_mode := "corridor" if _rng.randi_range(0, 1) == 1 else "room"
+	var start_options := _filter_elevator_candidates(candidates, start_mode, "")
+	if start_options.is_empty():
+		start_options = candidates.duplicate()
+	var start: Dictionary = start_options[_rng.randi_range(0, start_options.size() - 1)]
+
+	var goal_mode := "corridor" if _rng.randi_range(0, 1) == 1 else "room"
+	var goal_options := _filter_elevator_candidates(
+		candidates,
+		goal_mode,
+		start["host_key"],
+	)
+	if goal_options.is_empty():
+		goal_options = _filter_elevator_candidates(candidates, "", start["host_key"])
+	if goal_options.is_empty():
 		return {}
-	var selected_pair: Array = best_pairs[_rng.randi_range(0, best_pairs.size() - 1)]
-	if _rng.randi_range(0, 1) == 1:
-		selected_pair.reverse()
-	return {"start": selected_pair[0], "goal": selected_pair[1]}
+
+	var farthest_options: Array[Dictionary] = []
+	var farthest_distance_squared := -1.0
+	var start_position: Vector2 = start["position"]
+	for candidate: Dictionary in goal_options:
+		var candidate_position: Vector2 = candidate["position"]
+		var distance_squared := start_position.distance_squared_to(candidate_position)
+		if distance_squared > farthest_distance_squared + 0.001:
+			farthest_distance_squared = distance_squared
+			farthest_options = [candidate]
+		elif is_equal_approx(distance_squared, farthest_distance_squared):
+			farthest_options.append(candidate)
+	var goal: Dictionary = farthest_options[
+		_rng.randi_range(0, farthest_options.size() - 1)
+	]
+	return {"start": start, "goal": goal}
+
+
+func _filter_elevator_candidates(
+	candidates: Array[Dictionary],
+	preferred_mode: String,
+	excluded_host: String,
+) -> Array[Dictionary]:
+	var filtered: Array[Dictionary] = []
+	for candidate: Dictionary in candidates:
+		if not excluded_host.is_empty() and candidate["host_key"] == excluded_host:
+			continue
+		if not preferred_mode.is_empty() and candidate["mode"] != preferred_mode:
+			continue
+		filtered.append(candidate)
+	return filtered
 
 
 func _grid_axis_positions(gaps: Array[float]) -> Array[float]:
@@ -363,6 +431,7 @@ func _instantiate_layout(layout: Dictionary) -> void:
 			corridor["to"],
 			"RoomConnection%02d" % (corridor_index + 1),
 			corridor_light_variants[corridor_index],
+			corridor["elevator_side"],
 		)
 
 	var room_instances: Array[Node3D] = []
@@ -407,7 +476,15 @@ func _instantiate_layout(layout: Dictionary) -> void:
 		start_elevator_root.global_transform * Vector3(0.0, 0.45, 2.6)
 	)
 	player_spawn_yaw = start_elevator_root.global_rotation.y
-	var goal_room_index: int = layout["goal_elevator_room_index"]
+	var goal_attachment: Dictionary = layout["goal_elevator"]
+	var goal_room_index: int
+	if goal_attachment["mode"] == "room":
+		goal_room_index = goal_attachment["room_index"]
+	else:
+		var goal_corridor: Dictionary = layout["corridors"][
+			goal_attachment["corridor_index"]
+		]
+		goal_room_index = goal_corridor["second_room"]
 	robot_spawn_position = (
 		room_instances[goal_room_index].global_position + Vector3(0.0, 0.45, 0.0)
 	)
@@ -419,11 +496,28 @@ func _add_layout_elevator(
 	terminal_root: Node3D,
 	role: String,
 ) -> void:
-	var room_index: int = layout["%s_elevator_room_index" % role]
-	var side: String = layout["%s_elevator_side" % role]
-	var target_origin: Vector2 = room_specs[room_index]["origin"]
-	var outward := _side_vector(side)
-	var elevator_door_point := target_origin + outward * ROOM_WALL_OFFSET
+	var attachment: Dictionary = layout["%s_elevator" % role]
+	var outward: Vector2
+	var elevator_door_point: Vector2
+	if attachment["mode"] == "room":
+		var room_index: int = attachment["room_index"]
+		var side: String = attachment["side"]
+		var target_origin: Vector2 = room_specs[room_index]["origin"]
+		outward = _side_vector(side)
+		elevator_door_point = target_origin + outward * ROOM_WALL_OFFSET
+	else:
+		var corridor: Dictionary = layout["corridors"][attachment["corridor_index"]]
+		var from: Vector2 = corridor["from"]
+		var to: Vector2 = corridor["to"]
+		var direction := (to - from).normalized()
+		var center := from.lerp(to, 0.5)
+		var right := Vector2(direction.y, -direction.x)
+		outward = (
+			-right
+			if attachment["side"] == CORRIDOR_SIDE_LEFT
+			else right
+		)
+		elevator_door_point = center + outward * CORRIDOR_HALF_WIDTH
 	_add_elevator_terminal(
 		terminal_root,
 		elevator_door_point,
@@ -652,6 +746,7 @@ func _add_corridor_edge(
 	to: Vector2,
 	edge_name: String,
 	ceiling_has_lights: bool,
+	elevator_side: String,
 ) -> void:
 	var length := from.distance_to(to)
 	var direction := (to - from).normalized()
@@ -664,9 +759,17 @@ func _add_corridor_edge(
 	var ceiling_scene: PackedScene = (
 		CORRIDOR_CEILING_WITH_LIGHT if ceiling_has_lights else CORRIDOR_CEILING_NORMAL
 	)
-	module.call("configure", length, ceiling_scene, not ceiling_has_lights)
+	module.call(
+		"configure",
+		length,
+		ceiling_scene,
+		not ceiling_has_lights,
+		elevator_side,
+		ELEVATOR_OPENING_WIDTH,
+	)
 	module.set_meta("centerline_length", length)
 	module.set_meta("generated_ceiling_variant", "with_light" if ceiling_has_lights else "normal")
+	module.set_meta("generated_elevator_side", elevator_side)
 
 
 func _randomize_room_ceiling(room: Node3D) -> void:
