@@ -46,7 +46,7 @@ shape = SubResource("BoxShape_floor")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.09, -2.710207)
 shape = SubResource("BoxShape_ceiling")
 
-[node name="GallePost" type="Area3D" parent="." unique_id=529530818 groups=["galle"]]
+[node name="GallePost" type="Area3D" parent="." unique_id=529530818]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -2.9451063)
 collision_layer = 8
 collision_mask = 0

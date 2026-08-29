@@ -15,6 +15,7 @@ const MINIMUM_LENGTH := 3.0
 const MAXIMUM_LENGTH := 20.0
 const ROOM_HALF_SIZE := 7.0
 
+const ELEVATOR_FOOTPRINT_WIDTH := 3.532126
 var _has_run := false
 
 
@@ -32,6 +33,9 @@ func _run_validation() -> void:
 	var observed_extra_connection := false
 	var observed_one_entrance := false
 	var observed_three_entrances := false
+	var observed_room_elevator := false
+	var observed_corridor_elevator := false
+	var corridor_elevator_seed := 0
 
 	var generator := GENERATOR_SCENE.instantiate()
 	root.add_child(generator)
@@ -53,6 +57,12 @@ func _run_validation() -> void:
 			failures.append("seed %d: layout generation failed" % test_seed)
 			continue
 		_validate_layout(test_seed, layout, failures)
+		for role: String in ["start", "goal"]:
+			var mode: String = layout["%s_elevator" % role]["mode"]
+			observed_room_elevator = observed_room_elevator or mode == "room"
+			observed_corridor_elevator = observed_corridor_elevator or mode == "corridor"
+			if mode == "corridor" and corridor_elevator_seed == 0:
+				corridor_elevator_seed = test_seed
 		observed_extra_connection = observed_extra_connection or layout["corridors"].size() > ROOM_COUNT - 1
 		var selected_scene_paths: Dictionary = {}
 		for room_spec: Dictionary in layout["rooms"]:
@@ -72,9 +82,12 @@ func _run_validation() -> void:
 	if not observed_one_entrance or not observed_three_entrances:
 		failures.append("the 1-3 entrance range was not exercised")
 	_validate_door_swing_obstruction_guard(generator, failures)
+	if not observed_room_elevator or not observed_corridor_elevator:
+		failures.append("both room and corridor elevator placement were not exercised")
+
 	_validate_random_door_generation(generator, failures)
 
-	if not generator.generate_map(20260826):
+	if corridor_elevator_seed == 0 or not generator.generate_map(corridor_elevator_seed):
 		failures.append("full compact scene generation failed")
 	else:
 		_validate_instantiated_map(generator, failures)
@@ -337,12 +350,38 @@ func _validate_layout(test_seed: int, layout: Dictionary, failures: Array[String
 	if not _all_rooms_connected(connections):
 		failures.append("seed %d: room graph is disconnected" % test_seed)
 
-	var elevator_room_index: int = layout["elevator_room_index"]
-	var elevator_side: String = layout["elevator_side"]
-	if elevator_room_index < 0 or elevator_room_index >= rooms.size():
-		failures.append("seed %d: elevator room index is invalid" % test_seed)
-	elif not rooms[elevator_room_index]["entrances"].has(elevator_side):
-		failures.append("seed %d: elevator is not counted as a room entrance" % test_seed)
+	var elevator_hosts: Dictionary = {}
+	for role: String in ["start", "goal"]:
+		var attachment: Dictionary = layout["%s_elevator" % role]
+		var mode: String = attachment.get("mode", "")
+		var host_key: String = attachment.get("host_key", "")
+		if host_key.is_empty() or elevator_hosts.has(host_key):
+			failures.append("seed %d: elevator host is missing or reused" % test_seed)
+		elevator_hosts[host_key] = true
+		if mode == "room":
+			var room_index: int = attachment["room_index"]
+			var side: String = attachment["side"]
+			if room_index < 0 or room_index >= rooms.size():
+				failures.append("seed %d: %s elevator room index is invalid" % [test_seed, role])
+			elif not rooms[room_index]["entrances"].has(side):
+				failures.append(
+					"seed %d: %s elevator is not counted as a room entrance"
+					% [test_seed, role]
+				)
+			elif rooms[room_index]["elevator_role"] != role:
+				failures.append("seed %d: %s room elevator metadata is missing" % [test_seed, role])
+		elif mode == "corridor":
+			var corridor_index: int = attachment["corridor_index"]
+			if corridor_index < 0 or corridor_index >= corridors.size():
+				failures.append("seed %d: %s elevator corridor index is invalid" % [test_seed, role])
+				continue
+			var corridor: Dictionary = corridors[corridor_index]
+			if float(corridor["length"]) + 0.001 < ELEVATOR_FOOTPRINT_WIDTH:
+				failures.append("seed %d: elevator was placed in a corridor narrower than its width" % test_seed)
+			if corridor["elevator_role"] != role or corridor["elevator_side"] != attachment["side"]:
+				failures.append("seed %d: %s corridor elevator metadata is missing" % [test_seed, role])
+		else:
+			failures.append("seed %d: %s elevator mode is invalid" % [test_seed, role])
 
 
 func _all_rooms_connected(connections: Array) -> bool:
@@ -383,10 +422,48 @@ func _validate_instantiated_map(generator: Node, failures: Array[String]) -> voi
 				failures.append("%s entrance node count does not match metadata" % room.name)
 	if corridors_root == null or corridors_root.get_child_count() < ROOM_COUNT - 1:
 		failures.append("instantiated map has too few room corridors")
-	if generator.get_node_or_null("ElevatorTerminal/Elevator") == null:
-		failures.append("elevator model is missing")
-	var elevator_door := generator.get_node_or_null("ElevatorTerminal/ElevatorDoor") as Node3D
-	if elevator_door == null:
-		failures.append("closed elevator door is missing")
-	elif not elevator_door.position.is_equal_approx(Vector3(0.0, 2.469953, 0.0)):
-		failures.append("closed elevator door is offset from the elevator entrance")
+	else:
+		for corridor: Node3D in corridors_root.get_children():
+			var elevator_side: String = corridor.get_meta("generated_elevator_side", "")
+			if elevator_side.is_empty():
+				continue
+			var opening_width: float = corridor.get_meta("elevator_opening_width", 0.0)
+			if not is_equal_approx(opening_width, 2.683478):
+				failures.append("%s elevator opening width is invalid" % corridor.name)
+			var wall_prefix := (
+				"WallLeft"
+				if elevator_side == "left"
+				else "WallRight"
+			)
+			var wall_segments := corridor.find_children(
+				"%s*" % wall_prefix, "StaticBody3D", false, false
+			)
+			if wall_segments.size() != 3:
+				failures.append("%s elevator wall was not split around its opening" % corridor.name)
+	for role: String in ["Start", "Goal"]:
+		var terminal_path := "%sElevatorTerminal" % role
+		var elevator := generator.get_node_or_null("%s/Elevator" % terminal_path)
+		if elevator == null:
+			failures.append("%s elevator model is missing" % role.to_lower())
+			continue
+		var expected_role := role.to_lower()
+		if elevator.get("elevator_role") != expected_role:
+			failures.append("%s elevator has the wrong role" % expected_role)
+		var completion_area := elevator.get_node_or_null("GallePost") as Area3D
+		if completion_area == null:
+			failures.append("%s elevator completion area is missing" % expected_role)
+		elif completion_area.is_in_group(&"goal_elevator") != (expected_role == "goal"):
+			failures.append("only the goal elevator may have the completion group")
+		var elevator_door := generator.get_node_or_null("%s/ElevatorDoor" % terminal_path) as Node3D
+		if elevator_door == null:
+			failures.append("%s elevator door is missing" % expected_role)
+		elif not elevator_door.position.is_equal_approx(Vector3(0.0, 2.469953, 0.0)):
+			failures.append("%s elevator door is offset from its entrance" % expected_role)
+		elif elevator_door.get("is_start_door") != (expected_role == "start"):
+			failures.append("%s elevator door has the wrong access mode" % expected_role)
+
+	var start_terminal := generator.get_node_or_null("StartElevatorTerminal") as Node3D
+	if start_terminal != null:
+		var expected_spawn := start_terminal.global_transform * Vector3(0.0, 0.45, 2.6)
+		if not generator.player_spawn_position.is_equal_approx(expected_spawn):
+			failures.append("player spawn is not inside the start elevator")

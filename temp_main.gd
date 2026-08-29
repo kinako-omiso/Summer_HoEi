@@ -40,6 +40,7 @@ func _ready() -> void:
 		return
 
 	player.global_position = map_generator.player_spawn_position
+	player.global_rotation.y = map_generator.player_spawn_yaw
 	monster.global_position = map_generator.robot_spawn_position
 	monster.player = player
 	$Player/PlayerCamera.make_current()
