@@ -70,13 +70,26 @@ func _validate_ready_map() -> void:
 		failures.append("monster player reference is incorrect")
 
 	var map_rid := navigation_region.get_navigation_map()
-	var elevator_terminal := generator.get_node("ElevatorTerminal") as Node3D
-	var elevator_front := elevator_terminal.global_transform * Vector3(0.0, 0.45, -2.0)
-	for room: Node3D in rooms.get_children():
-		var room_start := room.global_position + Vector3(0.0, 0.45, 0.0)
-		var path := NavigationServer3D.map_get_path(map_rid, room_start, elevator_front, true)
-		if path.is_empty():
-			failures.append("%s has no navigation path to the elevator" % room.name)
+	for role: String in ["Start", "Goal"]:
+		var elevator_terminal := generator.get_node("%sElevatorTerminal" % role) as Node3D
+		var elevator_front := elevator_terminal.global_transform * Vector3(0.0, 0.45, -2.0)
+		for room: Node3D in rooms.get_children():
+			var room_start := room.global_position + Vector3(0.0, 0.45, 0.0)
+			var path := NavigationServer3D.map_get_path(map_rid, room_start, elevator_front, true)
+			if path.is_empty():
+				failures.append("%s has no navigation path to the %s elevator" % [room.name, role.to_lower()])
+	var start_terminal := generator.get_node("StartElevatorTerminal") as Node3D
+	var player_in_start := start_terminal.to_local(player.global_position)
+	if (
+		absf(player_in_start.x) > 1.1
+		or player_in_start.z < 0.2
+		or player_in_start.z > 2.5
+		or player_in_start.y < -0.2
+		or player_in_start.y > 1.0
+	):
+		failures.append("player did not spawn inside the start elevator")
+	if not is_equal_approx(player.global_rotation.y, generator.player_spawn_yaw):
+		failures.append("player did not face the start elevator exit")
 
 	var chase_path := NavigationServer3D.map_get_path(
 		map_rid,
@@ -206,16 +219,21 @@ func _validate_visible_doors(generator: Node, player: CharacterBody3D, failures:
 
 
 func _validate_elevator_door(generator: Node, failures: Array[String]) -> void:
-	var door := generator.get_node("ElevatorTerminal/ElevatorDoor") as Node3D
-	var panels := door.find_children("DoorPanel*", "AnimatableBody3D", false, false)
-	if panels.size() != 2:
-		failures.append("elevator does not contain two sliding door panels")
-	for panel: AnimatableBody3D in panels:
-		var expected_position := door.global_transform * panel.position
-		if panel.global_position.distance_to(expected_position) > 0.01:
-			failures.append("%s did not inherit its positioned parent transform" % panel.name)
-		if panel.global_position.y < 0.0:
-			failures.append("%s remained below the floor" % panel.name)
+	for role: String in ["Start", "Goal"]:
+		var door := generator.get_node("%sElevatorTerminal/ElevatorDoor" % role) as Node3D
+		if role == "Start" and not door.get("is_open"):
+			failures.append("start elevator door is not open for the spawned player")
+		elif role == "Goal" and door.get("is_open"):
+			failures.append("goal elevator door opened before the power outage")
+		var panels := door.find_children("DoorPanel*", "AnimatableBody3D", false, false)
+		if panels.size() != 2:
+			failures.append("%s elevator does not contain two sliding door panels" % role.to_lower())
+		for panel: AnimatableBody3D in panels:
+			var expected_position := door.global_transform * panel.position
+			if panel.global_position.distance_to(expected_position) > 0.01:
+				failures.append("%s did not inherit its positioned parent transform" % panel.name)
+			if panel.global_position.y < 0.0:
+				failures.append("%s remained below the floor" % panel.name)
 
 
 func _validate_elevator_door_motion(
@@ -223,7 +241,7 @@ func _validate_elevator_door_motion(
 	player: CharacterBody3D,
 	failures: Array[String],
 ) -> void:
-	var door := generator.get_node("ElevatorTerminal/ElevatorDoor") as Node3D
+	var door := generator.get_node("GoalElevatorTerminal/ElevatorDoor") as Node3D
 	var left_panel := door.get_node("DoorPanelLeft") as AnimatableBody3D
 	var right_panel := door.get_node("DoorPanelRight") as AnimatableBody3D
 	var left_closed := left_panel.position

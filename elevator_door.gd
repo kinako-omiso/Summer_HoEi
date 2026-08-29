@@ -4,6 +4,7 @@ extends Node3D
 @export_range(0.5, 3.0, 0.05) var slide_distance := 1.4
 @export_range(0.05, 5.0, 0.05) var animation_duration := 0.6
 @export_flags_3d_render var render_layers: int = 4
+@export var opens_without_power := false
 
 @onready var left_door_panel: AnimatableBody3D = $DoorPanelLeft
 @onready var right_door_panel: AnimatableBody3D = $DoorPanelRight
@@ -26,6 +27,7 @@ func _ready() -> void:
 	_apply_render_layers(right_door_panel)
 	proximity_area.body_entered.connect(_on_proximity_body_entered)
 	proximity_area.body_exited.connect(_on_proximity_body_exited)
+	_update_door_state()
 
 
 func on_power_outage() -> void:
@@ -46,7 +48,7 @@ func _on_proximity_body_exited(body: Node3D) -> void:
 
 
 func _update_door_state() -> void:
-	var should_open := is_power_out and _player_is_nearby()
+	var should_open := opens_without_power or (is_power_out and _player_is_nearby())
 	if should_open == is_open:
 		return
 	is_open = should_open

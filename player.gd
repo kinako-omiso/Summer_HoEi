@@ -23,12 +23,13 @@ func _physics_process(delta: float) -> void:
 			if _can_see_enemy(body):
 				die()
 				return
-	# ゴール（Area3D）との当たり判定
-	for area in $Area3D.get_overlapping_areas():
-		if area.is_in_group("galle"):
-			if _can_see_galle(area):
+	# goalエレベータに入ったときだけゲームクリアにする。
+	if not game_clear:
+		for area in $Area3D.get_overlapping_areas():
+			if area.is_in_group(&"goal_elevator") and _can_reach_goal_elevator(area):
 				game_clear = true
 				_success()
+				return
 
 
 				
@@ -74,7 +75,6 @@ func die():
 func _success():
 	await get_tree().create_timer(3.0).timeout
 	survive.emit()
-	game_clear = false
 	
 
 
@@ -108,12 +108,12 @@ func _can_see_enemy(enemy: Node3D) -> bool:
 
 	return false
 
-func _can_see_galle(galle: Node3D) -> bool:
+func _can_reach_goal_elevator(goal_area: Node3D) -> bool:
 
 	var space_state := get_world_3d().direct_space_state
 
 	var from := global_position + Vector3.UP 
-	var to := galle.global_position + Vector3.UP 
+	var to := goal_area.global_position + Vector3.UP
 
 	var query := PhysicsRayQueryParameters3D.create(
 		from,
@@ -133,7 +133,7 @@ func _can_see_galle(galle: Node3D) -> bool:
 
 	var collider = result["collider"]
 
-	if collider == galle:
+	if collider == goal_area:
 		return true
 
 	return false

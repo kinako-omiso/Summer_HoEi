@@ -56,6 +56,7 @@ const ELEVATOR_DOOR := preload("res://assets/3DModel/elevator_door.tscn")
 var generated_seed: int = 0
 var generated_door_count: int = 0
 var player_spawn_position := Vector3.ZERO
+var player_spawn_yaw := 0.0
 var robot_spawn_position := Vector3.ZERO
 var last_layout: Dictionary = {}
 
@@ -102,6 +103,9 @@ func _clear_generated_map() -> void:
 		child.free()
 	last_layout = {}
 	generated_door_count = 0
+	player_spawn_position = Vector3.ZERO
+	player_spawn_yaw = 0.0
+	robot_spawn_position = Vector3.ZERO
 
 
 func _build_valid_layout() -> Dictionary:
@@ -141,6 +145,7 @@ func _try_build_compact_layout() -> Dictionary:
 			"type": scene_id.substr(5, 1).to_upper(),
 			"entrances": [] as Array[String],
 			"elevator_side": "",
+			"elevator_role": "",
 		})
 
 	var corridor_specs: Array[Dictionary] = []
@@ -169,14 +174,19 @@ func _try_build_compact_layout() -> Dictionary:
 			"second_room": second_index,
 		})
 
-	var elevator_attachment := _choose_elevator_attachment(cells, room_specs)
-	if elevator_attachment.is_empty():
+	var elevator_attachments := _choose_elevator_attachments(cells, room_specs)
+	if elevator_attachments.is_empty():
 		return {}
-	var elevator_room_index: int = elevator_attachment["room_index"]
-	var elevator_side: String = elevator_attachment["side"]
-	var elevator_entrances: Array = room_specs[elevator_room_index]["entrances"]
-	elevator_entrances.append(elevator_side)
-	room_specs[elevator_room_index]["elevator_side"] = elevator_side
+	var start_elevator: Dictionary = elevator_attachments["start"]
+	var goal_elevator: Dictionary = elevator_attachments["goal"]
+	for role: String in ["start", "goal"]:
+		var attachment: Dictionary = elevator_attachments[role]
+		var elevator_room_index: int = attachment["room_index"]
+		var elevator_side: String = attachment["side"]
+		var elevator_entrances: Array = room_specs[elevator_room_index]["entrances"]
+		elevator_entrances.append(elevator_side)
+		room_specs[elevator_room_index]["elevator_side"] = elevator_side
+		room_specs[elevator_room_index]["elevator_role"] = role
 
 	return {
 		"seed": generated_seed,
@@ -185,8 +195,10 @@ func _try_build_compact_layout() -> Dictionary:
 		"corridors": corridor_specs,
 		"connections": connections,
 		"elevator_mode": "room",
-		"elevator_room_index": elevator_room_index,
-		"elevator_side": elevator_side,
+		"start_elevator_room_index": start_elevator["room_index"],
+		"start_elevator_side": start_elevator["side"],
+		"goal_elevator_room_index": goal_elevator["room_index"],
+		"goal_elevator_side": goal_elevator["side"],
 	}
 
 
@@ -257,7 +269,10 @@ func _select_room_connections(cells: Array[Vector2i]) -> Array[Dictionary]:
 	return selected
 
 
-func _choose_elevator_attachment(cells: Array[Vector2i], room_specs: Array[Dictionary]) -> Dictionary:
+func _choose_elevator_attachments(
+	cells: Array[Vector2i],
+	room_specs: Array[Dictionary],
+) -> Dictionary:
 	var occupied: Dictionary = {}
 	for cell: Vector2i in cells:
 		occupied[cell] = true
@@ -276,7 +291,31 @@ func _choose_elevator_attachment(cells: Array[Vector2i], room_specs: Array[Dicti
 				candidates.append({"room_index": room_index, "side": side})
 	if candidates.is_empty():
 		return {}
-	return candidates[_rng.randi_range(0, candidates.size() - 1)]
+
+	# Keep start and goal in different rooms and prefer the pair with the
+	# greatest grid separation so traversing the map is meaningful.
+	var best_pairs: Array[Array] = []
+	var greatest_distance_squared := -1
+	for first_index: int in range(candidates.size()):
+		var first: Dictionary = candidates[first_index]
+		for second_index: int in range(first_index + 1, candidates.size()):
+			var second: Dictionary = candidates[second_index]
+			if first["room_index"] == second["room_index"]:
+				continue
+			var first_cell: Vector2i = cells[first["room_index"]]
+			var second_cell: Vector2i = cells[second["room_index"]]
+			var distance_squared := (first_cell - second_cell).length_squared()
+			if distance_squared > greatest_distance_squared:
+				greatest_distance_squared = distance_squared
+				best_pairs = [[first, second]]
+			elif distance_squared == greatest_distance_squared:
+				best_pairs.append([first, second])
+	if best_pairs.is_empty():
+		return {}
+	var selected_pair: Array = best_pairs[_rng.randi_range(0, best_pairs.size() - 1)]
+	if _rng.randi_range(0, 1) == 1:
+		selected_pair.reverse()
+	return {"start": selected_pair[0], "goal": selected_pair[1]}
 
 
 func _grid_axis_positions(gaps: Array[float]) -> Array[float]:
@@ -307,9 +346,12 @@ func _instantiate_layout(layout: Dictionary) -> void:
 	var rooms_root := Node3D.new()
 	rooms_root.name = "Rooms"
 	add_child(rooms_root)
-	var elevator_root := Node3D.new()
-	elevator_root.name = "ElevatorTerminal"
-	add_child(elevator_root)
+	var start_elevator_root := Node3D.new()
+	start_elevator_root.name = "StartElevatorTerminal"
+	add_child(start_elevator_root)
+	var goal_elevator_root := Node3D.new()
+	goal_elevator_root.name = "GoalElevatorTerminal"
+	add_child(goal_elevator_root)
 
 	var corridors: Array = layout["corridors"]
 	var corridor_light_variants := _build_corridor_light_variants(corridors.size())
@@ -357,15 +399,37 @@ func _instantiate_layout(layout: Dictionary) -> void:
 	_ensure_at_least_one_generated_door(room_instances, room_specs)
 	generated_door_count = _count_generated_doors(room_instances)
 
-	var elevator_room_index: int = layout["elevator_room_index"]
-	var elevator_side: String = layout["elevator_side"]
-	var target_origin: Vector2 = room_specs[elevator_room_index]["origin"]
-	var outward := _side_vector(elevator_side)
-	var elevator_door_point := target_origin + outward * ROOM_WALL_OFFSET
-	_add_elevator_terminal(elevator_root, elevator_door_point, _yaw_from_direction(outward))
+	_add_layout_elevator(layout, room_specs, start_elevator_root, "start")
+	_add_layout_elevator(layout, room_specs, goal_elevator_root, "goal")
 
-	player_spawn_position = room_instances[0].global_position + Vector3(0.0, 0.45, 0.0)
-	robot_spawn_position = room_instances[-1].global_position + Vector3(0.0, 0.45, 0.0)
+	# The terminal-local positive Z axis points into the elevator enclosure.
+	player_spawn_position = (
+		start_elevator_root.global_transform * Vector3(0.0, 0.45, 1.25)
+	)
+	player_spawn_yaw = start_elevator_root.global_rotation.y
+	var goal_room_index: int = layout["goal_elevator_room_index"]
+	robot_spawn_position = (
+		room_instances[goal_room_index].global_position + Vector3(0.0, 0.45, 0.0)
+	)
+
+
+func _add_layout_elevator(
+	layout: Dictionary,
+	room_specs: Array,
+	terminal_root: Node3D,
+	role: String,
+) -> void:
+	var room_index: int = layout["%s_elevator_room_index" % role]
+	var side: String = layout["%s_elevator_side" % role]
+	var target_origin: Vector2 = room_specs[room_index]["origin"]
+	var outward := _side_vector(side)
+	var elevator_door_point := target_origin + outward * ROOM_WALL_OFFSET
+	_add_elevator_terminal(
+		terminal_root,
+		elevator_door_point,
+		_yaw_from_direction(outward),
+		role,
+	)
 
 
 func _configure_room_walls(room: Node3D, entrances: Array, elevator_side: String) -> Dictionary:
@@ -626,18 +690,27 @@ func _randomize_room_ceiling(room: Node3D) -> void:
 	room.set_meta("generated_ceiling_variant", "with_light" if ceiling_has_lights else "normal")
 
 
-func _add_elevator_terminal(parent: Node3D, door_point: Vector2, yaw: float) -> void:
+func _add_elevator_terminal(
+	parent: Node3D,
+	door_point: Vector2,
+	yaw: float,
+	role: String,
+) -> void:
 	parent.position = _to_world(door_point)
 	parent.rotation.y = yaw
+	parent.set_meta("elevator_role", role)
+	parent.add_to_group("%s_elevator_terminal" % role)
 
 	var elevator := ELEVATOR.instantiate() as Node3D
 	elevator.name = "Elevator"
+	elevator.set("elevator_role", role)
 	parent.add_child(elevator)
 	elevator.position = Vector3(0.0, 3.0, 4.28)
 
 	var door := ELEVATOR_DOOR.instantiate() as Node3D
 	door.name = "ElevatorDoor"
 	door.position = Vector3(0.0, 2.469953, 0.0)
+	door.set("opens_without_power", role == "start")
 	# DoorPanel is an AnimatableBody3D, so it captures its global transform when
 	# entering the tree. Position its parent first to keep the closed panel at
 	# the elevator entrance instead of synchronized below the floor.
