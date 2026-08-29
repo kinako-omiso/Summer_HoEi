@@ -3,12 +3,17 @@ extends Node
 
 signal runtime_map_ready(seed_value: int)
 
+@export_category("Audio")
+@export_range(-80.0, 12.0, 0.5, "suffix:dB") var bgm_volume_db := 6.0
+@export var audio_output_device := "Default"
+
 @onready var navigation_region: NavigationRegion3D = $NavigationRegion3D
 @onready var map_generator: Node3D = $NavigationRegion3D/MapGenerator
 @onready var player: CharacterBody3D = $Player
 @onready var monster: CharacterBody3D = $demomonster
 @onready var world_environment: WorldEnvironment = $WorldEnvironment
 @onready var result_ui: CanvasLayer = $ResultUserInterface
+@onready var bgm_player: AudioStreamPlayer = $BGMPlayer
 
 var camera_change := 1
 var is_runtime_map_ready := false
@@ -18,6 +23,7 @@ var _debug_background_energy := 0.0
 
 
 func _ready() -> void:
+	_start_bgm()
 	var environment := world_environment.environment
 	if environment != null:
 		_debug_ambient_energy = environment.ambient_light_energy
@@ -71,6 +77,40 @@ func _ready() -> void:
 			navigation_region.navigation_mesh.get_polygon_count(),
 		]
 	)
+
+
+func _start_bgm() -> void:
+	_configure_audio_output()
+	bgm_player.volume_db = bgm_volume_db
+	if bgm_player.stream == null:
+		push_error("BGMPlayer has no audio stream assigned.")
+		return
+	bgm_player.play()
+
+
+func _configure_audio_output() -> void:
+	var available_devices := AudioServer.get_output_device_list()
+	var requested_device := audio_output_device.strip_edges()
+	if requested_device.is_empty() or requested_device == "Default":
+		AudioServer.output_device = "Default"
+	elif available_devices.has(requested_device):
+		AudioServer.output_device = requested_device
+	else:
+		AudioServer.output_device = "Default"
+		push_warning(
+			"Audio output device '%s' is unavailable; using Default."
+			% requested_device
+		)
+
+
+func _on_bgm_player_finished() -> void:
+	# Fallback for stream formats that do not expose an internal loop setting.
+	bgm_player.play()
+
+
+func _exit_tree() -> void:
+	if is_instance_valid(bgm_player):
+		bgm_player.stop()
 
 
 func _process(_delta: float) -> void:
