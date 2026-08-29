@@ -1,0 +1,68 @@
+[gd_scene format=3 uid="uid://cpt3ltdtsqab"]
+
+[ext_resource type="Script" uid="uid://b72rsqtmtu0fs" path="res://license_and_credits.gd" id="1_8h0kr"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_8h0kr"]
+bg_color = Color(0.99215686, 1, 1, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ru8sl"]
+bg_color = Color(0.03529412, 0.03529412, 0.09019608, 0.92156863)
+
+[node name="LicenseAndCredits" type="Control" unique_id=1896276850]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_8h0kr")
+
+[node name="ColorRect" type="ColorRect" parent="." unique_id=1894818355]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="ColorRect" unique_id=1058002259]
+layout_mode = 1
+anchors_preset = 13
+anchor_left = 0.5
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -4.0
+offset_right = 4.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="ColorRect/MarginContainer" unique_id=920299107]
+layout_mode = 2
+
+[node name="Spacer" type="Control" parent="ColorRect/MarginContainer/VBoxContainer" unique_id=2093827781]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+
+[node name="TitileLabel" type="Label" parent="ColorRect/MarginContainer/VBoxContainer" unique_id=286095322]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0, 0.8039216, 1)
+theme_override_font_sizes/font_size = 64
+text = "ライセンス・クレジット"
+
+[node name="Spacer2" type="Control" parent="ColorRect/MarginContainer/VBoxContainer" unique_id=625904005]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+
+[node name="LicenseText" type="RichTextLabel" parent="ColorRect/MarginContainer/VBoxContainer" unique_id=695736746]
+custom_minimum_size = Vector2(0, 350)
+layout_mode = 2
+theme_override_colors/default_color = Color(0, 0, 0, 1)
+theme_override_styles/normal = SubResource("StyleBoxFlat_8h0kr")
+bbcode_enabled = true
+
+[node name="BackButton" type="Button" parent="ColorRect/MarginContainer/VBoxContainer" unique_id=1223921753]
+custom_minimum_size = Vector2(0, 60)
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+theme_override_styles/normal = SubResource("StyleBoxFlat_ru8sl")
+text = "タイトルへ戻る"
