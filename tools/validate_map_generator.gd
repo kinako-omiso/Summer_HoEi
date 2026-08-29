@@ -412,11 +412,11 @@ func _validate_instantiated_map(generator: Node, failures: Array[String]) -> voi
 			failures.append("%s elevator door is missing" % expected_role)
 		elif not elevator_door.position.is_equal_approx(Vector3(0.0, 2.469953, 0.0)):
 			failures.append("%s elevator door is offset from its entrance" % expected_role)
-		elif elevator_door.get("opens_without_power") != (expected_role == "start"):
+		elif elevator_door.get("is_start_door") != (expected_role == "start"):
 			failures.append("%s elevator door has the wrong access mode" % expected_role)
 
 	var start_terminal := generator.get_node_or_null("StartElevatorTerminal") as Node3D
 	if start_terminal != null:
-		var expected_spawn := start_terminal.global_transform * Vector3(0.0, 0.45, 1.25)
+		var expected_spawn := start_terminal.global_transform * Vector3(0.0, 0.45, 2.6)
 		if not generator.player_spawn_position.is_equal_approx(expected_spawn):
 			failures.append("player spawn is not inside the start elevator")

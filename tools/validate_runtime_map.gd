@@ -56,6 +56,7 @@ func _validate_ready_map() -> void:
 	_validate_debug_lighting(failures)
 	_validate_visible_doors(generator, player, failures)
 	_validate_elevator_door(generator, failures)
+	await _validate_start_elevator_exit(generator, failures)
 	await _validate_elevator_door_motion(generator, player, failures)
 	_validate_random_ceiling_variants(rooms, corridors, failures)
 	if navigation_region.navigation_mesh.get_polygon_count() <= 0:
@@ -83,7 +84,7 @@ func _validate_ready_map() -> void:
 	if (
 		absf(player_in_start.x) > 1.1
 		or player_in_start.z < 0.2
-		or player_in_start.z > 2.5
+		or player_in_start.z > 2.7
 		or player_in_start.y < -0.2
 		or player_in_start.y > 1.0
 	):
@@ -221,8 +222,10 @@ func _validate_visible_doors(generator: Node, player: CharacterBody3D, failures:
 func _validate_elevator_door(generator: Node, failures: Array[String]) -> void:
 	for role: String in ["Start", "Goal"]:
 		var door := generator.get_node("%sElevatorTerminal/ElevatorDoor" % role) as Node3D
-		if role == "Start" and not door.get("is_open"):
-			failures.append("start elevator door is not open for the spawned player")
+		if role == "Start" and door.get("is_open"):
+			failures.append("start elevator door opened before the player approached")
+		elif role == "Start" and not (door.get("_nearby_players") as Dictionary).is_empty():
+			failures.append("start spawn incorrectly activated the elevator door sensor")
 		elif role == "Goal" and door.get("is_open"):
 			failures.append("goal elevator door opened before the power outage")
 		var panels := door.find_children("DoorPanel*", "AnimatableBody3D", false, false)
@@ -234,6 +237,34 @@ func _validate_elevator_door(generator: Node, failures: Array[String]) -> void:
 				failures.append("%s did not inherit its positioned parent transform" % panel.name)
 			if panel.global_position.y < 0.0:
 				failures.append("%s remained below the floor" % panel.name)
+
+
+func _validate_start_elevator_exit(generator: Node, failures: Array[String]) -> void:
+	var terminal := generator.get_node("StartElevatorTerminal") as Node3D
+	var door := terminal.get_node("ElevatorDoor") as Node3D
+	var left_panel := door.get_node("DoorPanelLeft") as AnimatableBody3D
+	var right_panel := door.get_node("DoorPanelRight") as AnimatableBody3D
+	var left_closed: Vector3 = door.get("_left_closed_position")
+	var right_closed: Vector3 = door.get("_right_closed_position")
+	var animation_duration: float = door.get("animation_duration")
+	var exiting_player := CharacterBody3D.new()
+	exiting_player.add_to_group(&"player")
+	root.add_child(exiting_player)
+	exiting_player.global_position = terminal.global_transform * Vector3(0.0, 0.45, 0.0)
+	door.call("_on_proximity_body_entered", exiting_player)
+	await create_timer(animation_duration + 0.1).timeout
+	if not door.get("is_open"):
+		failures.append("start elevator door did not open near the doorway")
+	exiting_player.global_position = terminal.global_transform * Vector3(0.0, 0.45, -1.0)
+	door.call("_on_proximity_body_exited", exiting_player)
+	await create_timer(animation_duration + 0.1).timeout
+	if door.get("is_open"):
+		failures.append("start elevator door remained open after the player exited")
+	if not left_panel.position.is_equal_approx(left_closed):
+		failures.append("start elevator left door did not close after exit")
+	if not right_panel.position.is_equal_approx(right_closed):
+		failures.append("start elevator right door did not close after exit")
+	exiting_player.free()
 
 
 func _validate_elevator_door_motion(

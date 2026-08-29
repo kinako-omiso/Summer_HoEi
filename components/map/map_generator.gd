@@ -404,7 +404,7 @@ func _instantiate_layout(layout: Dictionary) -> void:
 
 	# The terminal-local positive Z axis points into the elevator enclosure.
 	player_spawn_position = (
-		start_elevator_root.global_transform * Vector3(0.0, 0.45, 1.25)
+		start_elevator_root.global_transform * Vector3(0.0, 0.45, 2.6)
 	)
 	player_spawn_yaw = start_elevator_root.global_rotation.y
 	var goal_room_index: int = layout["goal_elevator_room_index"]
@@ -705,12 +705,14 @@ func _add_elevator_terminal(
 	elevator.name = "Elevator"
 	elevator.set("elevator_role", role)
 	parent.add_child(elevator)
-	elevator.position = Vector3(0.0, 3.0, 4.28)
+	# Room floors top out at Y=0.15. Raising the enclosure by 0.15 aligns
+	# its floor collision with the room and removes the doorway step.
+	elevator.position = Vector3(0.0, 3.15, 4.28)
 
 	var door := ELEVATOR_DOOR.instantiate() as Node3D
 	door.name = "ElevatorDoor"
 	door.position = Vector3(0.0, 2.469953, 0.0)
-	door.set("opens_without_power", role == "start")
+	door.set("is_start_door", role == "start")
 	# DoorPanel is an AnimatableBody3D, so it captures its global transform when
 	# entering the tree. Position its parent first to keep the closed panel at
 	# the elevator entrance instead of synchronized below the floor.
