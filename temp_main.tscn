@@ -5,6 +5,7 @@
 [ext_resource type="PackedScene" uid="uid://dqwbx620higo1" path="res://demomonster/demomonster.tscn" id="3_monster"]
 [ext_resource type="PackedScene" path="res://components/map/map_generator.tscn" id="4_generator"]
 [ext_resource type="PackedScene" uid="uid://dt4qgt2esabt6" path="res://result_user_interface.tscn" id="5_xcf3y"]
+[ext_resource type="AudioStream" uid="uid://cjdfe855e54no" path="res://assets/Music/BrokenMachine7.wav" id="6_bgm"]
 
 [sub_resource type="NavigationMesh" id="NavigationMesh_runtime"]
 geometry_parsed_geometry_type = 1
@@ -24,6 +25,7 @@ ambient_light_energy = 0.18
 
 [node name="TempMain" type="Node" unique_id=673077450]
 script = ExtResource("1_main")
+bgm_volume_db = 0.0
 
 [node name="NavigationRegion3D" type="NavigationRegion3D" parent="." unique_id=748385280]
 navigation_mesh = SubResource("NavigationMesh_runtime")
@@ -40,7 +42,11 @@ player = NodePath("../Player")
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=548839510]
 environment = SubResource("Environment_runtime")
 
+[node name="BGMPlayer" type="AudioStreamPlayer" parent="." unique_id=1872239753]
+stream = ExtResource("6_bgm")
+
 [node name="ResultUserInterface" parent="." unique_id=1197500075 instance=ExtResource("5_xcf3y")]
 
 [connection signal="hit" from="Player" to="." method="_on_player_hit"]
 [connection signal="survive" from="Player" to="." method="_on_player_survive"]
+[connection signal="finished" from="BGMPlayer" to="." method="_on_bgm_player_finished"]
