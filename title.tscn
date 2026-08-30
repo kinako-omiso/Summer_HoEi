@@ -1,27 +1,15 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene format=3 uid="uid://bl81r6a5nye18"]
 
-[ext_resource type="Script" path="res://title.gd" id="1_script"]
-[ext_resource type="Texture2D" path="res://assets/title.png" id="2_logo"]
+[ext_resource type="Script" uid="uid://dq4whk440t5y5" path="res://title.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://72tqruxse27r" path="res://assets/title.png" id="2_logo"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBox_button_normal"]
-bg_color = Color(0.035, 0.035, 0.09, 0.92)
+bg_color = Color(0.03529412, 0.03529412, 0.09019608, 0.92156863)
 border_width_left = 3
 border_width_top = 3
 border_width_right = 3
 border_width_bottom = 3
 border_color = Color(1, 1, 0.63, 0.85)
-corner_radius_top_left = 12
-corner_radius_top_right = 12
-corner_radius_bottom_right = 12
-corner_radius_bottom_left = 12
-
-[sub_resource type="StyleBoxFlat" id="StyleBox_button_hover"]
-bg_color = Color(0.14, 0.14, 0.31, 0.98)
-border_width_left = 4
-border_width_top = 4
-border_width_right = 4
-border_width_bottom = 4
-border_color = Color(1, 1, 0.63, 1)
 corner_radius_top_left = 12
 corner_radius_top_right = 12
 corner_radius_bottom_right = 12
@@ -39,7 +27,19 @@ corner_radius_top_right = 12
 corner_radius_bottom_right = 12
 corner_radius_bottom_left = 12
 
-[node name="Title" type="Control"]
+[sub_resource type="StyleBoxFlat" id="StyleBox_button_hover"]
+bg_color = Color(0.14, 0.14, 0.31, 0.98)
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(1, 1, 0.63, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[node name="Title" type="Control" unique_id=310804462]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -48,7 +48,7 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_script")
 
-[node name="Background" type="ColorRect" parent="."]
+[node name="Background" type="ColorRect" parent="." unique_id=1719280503]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -56,9 +56,8 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-color = Color(1, 1, 1, 1)
 
-[node name="MarginContainer" type="MarginContainer" parent="."]
+[node name="MarginContainer" type="MarginContainer" parent="." unique_id=1709965228]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -70,52 +69,70 @@ theme_override_constants/margin_top = 28
 theme_override_constants/margin_right = 40
 theme_override_constants/margin_bottom = 28
 
-[node name="Menu" type="VBoxContainer" parent="MarginContainer"]
+[node name="Menu" type="VBoxContainer" parent="MarginContainer" unique_id=1190853071]
 layout_mode = 2
 theme_override_constants/separation = 14
 alignment = 1
 
-[node name="Logo" type="TextureRect" parent="MarginContainer/Menu"]
-custom_minimum_size = Vector2(560, 280)
+[node name="Logo" type="TextureRect" parent="MarginContainer/Menu" unique_id=1957638114]
+custom_minimum_size = Vector2(560, 350)
 layout_mode = 2
 size_flags_vertical = 3
 texture = ExtResource("2_logo")
 expand_mode = 3
 stretch_mode = 5
 
-[node name="Spacer" type="Control" parent="MarginContainer/Menu"]
+[node name="Spacer" type="Control" parent="MarginContainer/Menu" unique_id=711721107]
+visible = false
 custom_minimum_size = Vector2(0, 10)
 layout_mode = 2
 
-[node name="StartButton" type="Button" parent="MarginContainer/Menu"]
+[node name="StartButton" type="Button" parent="MarginContainer/Menu" unique_id=885607897]
 custom_minimum_size = Vector2(560, 84)
 layout_mode = 2
 size_flags_horizontal = 4
 focus_neighbor_bottom = NodePath("../QuitButton")
 theme_override_colors/font_color = Color(1, 1, 0.72, 1)
-theme_override_colors/font_hover_color = Color(1, 1, 0.82, 1)
 theme_override_colors/font_focus_color = Color(1, 1, 0.82, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 0.82, 1)
 theme_override_font_sizes/font_size = 64
 theme_override_styles/normal = SubResource("StyleBox_button_normal")
-theme_override_styles/hover = SubResource("StyleBox_button_hover")
 theme_override_styles/pressed = SubResource("StyleBox_button_pressed")
+theme_override_styles/hover = SubResource("StyleBox_button_hover")
 theme_override_styles/focus = SubResource("StyleBox_button_hover")
 text = "ゲームスタート"
 
-[node name="QuitButton" type="Button" parent="MarginContainer/Menu"]
+[node name="QuitButton" type="Button" parent="MarginContainer/Menu" unique_id=2074334836]
 custom_minimum_size = Vector2(560, 84)
 layout_mode = 2
 size_flags_horizontal = 4
 focus_neighbor_top = NodePath("../StartButton")
 theme_override_colors/font_color = Color(1, 1, 0.72, 1)
-theme_override_colors/font_hover_color = Color(1, 1, 0.82, 1)
 theme_override_colors/font_focus_color = Color(1, 1, 0.82, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 0.82, 1)
 theme_override_font_sizes/font_size = 64
 theme_override_styles/normal = SubResource("StyleBox_button_normal")
-theme_override_styles/hover = SubResource("StyleBox_button_hover")
 theme_override_styles/pressed = SubResource("StyleBox_button_pressed")
+theme_override_styles/hover = SubResource("StyleBox_button_hover")
 theme_override_styles/focus = SubResource("StyleBox_button_hover")
 text = "ゲームをやめる"
 
+[node name="LicenseAndCreditsButton" type="Button" parent="MarginContainer/Menu" unique_id=987014829]
+custom_minimum_size = Vector2(560, 40)
+layout_mode = 2
+size_flags_horizontal = 4
+focus_neighbor_top = NodePath("../StartButton")
+theme_override_colors/font_color = Color(0, 1, 0.72156864, 1)
+theme_override_colors/font_focus_color = Color(1, 1, 0.81960785, 1)
+theme_override_colors/font_hover_color = Color(1, 0, 0.81960785, 1)
+theme_override_font_sizes/font_size = 32
+theme_override_styles/normal = SubResource("StyleBox_button_normal")
+theme_override_styles/pressed = SubResource("StyleBox_button_pressed")
+theme_override_styles/hover = SubResource("StyleBox_button_hover")
+theme_override_styles/focus = SubResource("StyleBox_button_hover")
+text = "ライセンス・クレジット
+"
+
 [connection signal="pressed" from="MarginContainer/Menu/StartButton" to="." method="_on_start_button_pressed"]
 [connection signal="pressed" from="MarginContainer/Menu/QuitButton" to="." method="_on_quit_button_pressed"]
+[connection signal="pressed" from="MarginContainer/Menu/LicenseAndCreditsButton" to="." method="_on_license_and_credits_button_pressed"]
