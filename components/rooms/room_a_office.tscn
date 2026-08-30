@@ -1,0 +1,49 @@
+[gd_scene format=3 uid="uid://c5yu1qn8v63nc"]
+
+[ext_resource type="Script" uid="uid://dmkgn3q7eghr4" path="res://components/rooms/room_component.gd" id="1_room"]
+[ext_resource type="PackedScene" uid="uid://c5nhxy31s2txk" path="res://assets/3DModel/floor_square.tscn" id="2_floor"]
+[ext_resource type="PackedScene" path="res://assets/3DModel/wall_no_door.tscn" id="3_wall"]
+[ext_resource type="PackedScene" uid="uid://cm1jwh0mcnaon" path="res://assets/3DModel/ceiling_square_with_light.tscn" id="4_ceiling"]
+[ext_resource type="PackedScene" uid="uid://dtwqe00ewj4d" path="res://demobreaker/breaker.tscn" id="5_breaker"]
+[ext_resource type="PackedScene" uid="uid://bh6bd0gjgyixf" path="res://assets/3DModel/desk_setup.tscn" id="6_desk"]
+
+[node name="RoomAOffice" type="Node3D" unique_id=663166961 groups=["room_components"]]
+script = ExtResource("1_room")
+
+[node name="Structure" type="Node3D" parent="." unique_id=1207093419]
+
+[node name="Floor" parent="Structure" unique_id=2041229843 instance=ExtResource("2_floor")]
+
+[node name="Ceiling" parent="Structure" unique_id=1458186744 instance=ExtResource("4_ceiling")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.31, 0)
+
+[node name="WallSouth" parent="Structure" unique_id=784133631 instance=ExtResource("3_wall")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 3.15, 6.87)
+
+[node name="WallEast" parent="Structure" unique_id=710192135 instance=ExtResource("3_wall")]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 6.87, 3.15, 0)
+
+[node name="WallWest" parent="Structure" unique_id=2103874756 instance=ExtResource("3_wall")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -6.87, 3.15, 0)
+
+[node name="Breaker" parent="." unique_id=703744668 instance=ExtResource("5_breaker")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 6.62)
+
+[node name="RandomDeskCandidates" type="Node3D" parent="." unique_id=1227141272]
+
+[node name="DeskMonitor01" parent="RandomDeskCandidates" unique_id=1777217265 groups=["random_desk_monitor_candidates"] instance=ExtResource("6_desk")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.3, 0.15, -3.8)
+
+[node name="DeskMonitor02" parent="RandomDeskCandidates" unique_id=1772836731 groups=["random_desk_monitor_candidates"] instance=ExtResource("6_desk")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.3, 0.15, 0)
+
+[node name="DeskMonitor03" parent="RandomDeskCandidates" unique_id=686487597 groups=["random_desk_monitor_candidates"] instance=ExtResource("6_desk")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.3, 0.15, 3.8)
+
+[node name="DeskMonitor04" parent="RandomDeskCandidates" unique_id=2096075136 groups=["random_desk_monitor_candidates"] instance=ExtResource("6_desk")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 4.3, 0.15, -2)
+
+[node name="DeskMonitor05" parent="RandomDeskCandidates" unique_id=485905777 groups=["random_desk_monitor_candidates"] instance=ExtResource("6_desk")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 4.3, 0.15, 2.2)
+
+[connection signal="lights_out" from="Breaker" to="." method="_on_breaker_lights_out"]

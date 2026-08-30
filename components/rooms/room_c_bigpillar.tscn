@@ -1,0 +1,72 @@
+[gd_scene format=3 uid="uid://cfk1agbtmyhj2"]
+
+[ext_resource type="Script" uid="uid://dmkgn3q7eghr4" path="res://components/rooms/room_component.gd" id="1_e3gq3"]
+[ext_resource type="Script" uid="uid://bafdgvvgwfh61" path="res://world_surface.gd" id="1_mjevb"]
+[ext_resource type="PackedScene" uid="uid://bugvnu7o8jwuk" path="res://assets/3DModel/floor_square.glb" id="2_hcb51"]
+[ext_resource type="PackedScene" uid="uid://cm1jwh0mcnaon" path="res://assets/3DModel/ceiling_square_with_light.tscn" id="3_qfhs7"]
+[ext_resource type="PackedScene" path="res://assets/3DModel/wall_no_door.tscn" id="4_5vsw0"]
+[ext_resource type="PackedScene" path="res://assets/3DModel/pillar_medium.tscn" id="5_5vsw0"]
+[ext_resource type="PackedScene" path="res://assets/3DModel/pillar_large.tscn" id="6_e3gq3"]
+[ext_resource type="PackedScene" uid="uid://dtwqe00ewj4d" path="res://demobreaker/breaker.tscn" id="7_c5j1s"]
+
+[sub_resource type="BoxShape3D" id="BoxShape_floor"]
+size = Vector3(14, 0.3, 14)
+
+[node name="RoomCBigpillar" type="Node3D" unique_id=1092436475]
+script = ExtResource("1_e3gq3")
+
+[node name="Structure" type="Node3D" parent="." unique_id=38094176]
+
+[node name="Floor" type="StaticBody3D" parent="Structure" unique_id=579625886]
+collision_layer = 4
+collision_mask = 0
+script = ExtResource("1_mjevb")
+
+[node name="Model" parent="Structure/Floor" unique_id=437328803 instance=ExtResource("2_hcb51")]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Structure/Floor" unique_id=2113872832]
+shape = SubResource("BoxShape_floor")
+
+[node name="CenterLight" type="OmniLight3D" parent="Structure/Floor" unique_id=620121547 groups=["lights"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.35, 0)
+layers = 4
+light_energy = 0.8
+omni_range = 12.0
+
+[node name="Ceiling" parent="Structure" unique_id=709384218 instance=ExtResource("3_qfhs7")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.31, 0)
+
+[node name="WallEast" parent="Structure" unique_id=1943295376 instance=ExtResource("4_5vsw0")]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 6.87, 3.15, 0)
+
+[node name="WallSouth" parent="Structure" unique_id=1434321341 instance=ExtResource("4_5vsw0")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 3.15, 6.87)
+
+[node name="WallWest" parent="Structure" unique_id=565030952 instance=ExtResource("4_5vsw0")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -6.87, 3.15, 0)
+
+[node name="PillarCenter" parent="Structure" unique_id=2021830318 instance=ExtResource("6_e3gq3")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.0843043, 0)
+
+[node name="BreakerManager" parent="." unique_id=1977523128 instance=ExtResource("7_c5j1s")]
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 0, 2.9124384, 1.6370475)
+metadata/wall_mounted = false
+
+[node name="RandomPillarCandidates" type="Node3D" parent="." unique_id=2068588081]
+
+[node name="Pillar01" parent="RandomPillarCandidates" unique_id=1775660559 groups=["pillar"] instance=ExtResource("5_5vsw0")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.7, 3.001, 3.7)
+
+[node name="Pillar02" parent="RandomPillarCandidates" unique_id=930788533 groups=["pillar"] instance=ExtResource("5_5vsw0")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.7, 3.001, 3.7)
+
+[node name="Pillar03" parent="RandomPillarCandidates" unique_id=1023796021 groups=["pillar"] instance=ExtResource("5_5vsw0")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.7, 3.001, -3.7)
+
+[node name="Pillar04" parent="RandomPillarCandidates" unique_id=1466317715 groups=["pillar"] instance=ExtResource("5_5vsw0")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.7, 3.001, -3.7)
+
+[node name="Pillar05" parent="RandomPillarCandidates" unique_id=545124577 groups=["pillar"] instance=ExtResource("5_5vsw0")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.001, 0)
+
+[connection signal="lights_out" from="BreakerManager" to="." method="_on_breaker_lights_out"]

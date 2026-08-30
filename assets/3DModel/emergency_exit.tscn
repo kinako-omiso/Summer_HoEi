@@ -1,0 +1,25 @@
+[gd_scene format=3 uid="uid://bw13s5xgdjcvd"]
+
+[ext_resource type="Script" uid="uid://bafdgvvgwfh61" path="res://world_surface.gd" id="1_5vgpp"]
+[ext_resource type="PackedScene" uid="uid://klaayul3hl22" path="res://assets/3DModel/emergency_exit.glb" id="2_4wp8j"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_k8684"]
+size = Vector3(0.6602783, 4.82555, 3.1955261)
+
+[node name="EmergencyExit" type="StaticBody3D" unique_id=1181305597]
+collision_layer = 4
+collision_mask = 0
+script = ExtResource("1_5vgpp")
+
+[node name="Model" parent="." unique_id=1403696424 instance=ExtResource("2_4wp8j")]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1116109973]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.1035156e-05, -1.680872, 0.008834839)
+shape = SubResource("BoxShape3D_k8684")
+
+[node name="OmniLight3D" type="OmniLight3D" parent="." unique_id=627739340 groups=["player_lights"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.1384459, 0, 0)
+layers = 4
+light_color = Color(0, 0.9989807, 0, 1)
+light_energy = 0.0
+omni_range = 1.5

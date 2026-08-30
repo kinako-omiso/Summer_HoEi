@@ -1,0 +1,269 @@
+extends SceneTree
+
+
+const MAIN_SCENE := preload("res://temp_main.tscn")
+const TEST_SEED := 20260826
+const TIMEOUT_MSEC := 120_000
+
+var _main: Node
+var _started := false
+var _map_ready := false
+var _validation_started := false
+var _ready_seed := 0
+var _started_at_msec := 0
+
+
+func _process(_delta: float) -> bool:
+	if not _started:
+		_started = true
+		_started_at_msec = Time.get_ticks_msec()
+		_main = MAIN_SCENE.instantiate()
+		var generator := _main.get_node("NavigationRegion3D/MapGenerator")
+		generator.seed_override = TEST_SEED
+		_main.runtime_map_ready.connect(_on_runtime_map_ready)
+		root.add_child(_main)
+		return false
+
+	if _map_ready:
+		if not _validation_started:
+			_validation_started = true
+			_validate_ready_map()
+		return false
+
+	if Time.get_ticks_msec() - _started_at_msec > TIMEOUT_MSEC:
+		push_error("Runtime map validation timed out while baking NavigationMesh.")
+		quit(1)
+		return true
+	return false
+
+
+func _on_runtime_map_ready(seed_value: int) -> void:
+	_ready_seed = seed_value
+	_map_ready = true
+
+
+func _validate_ready_map() -> void:
+	var failures: Array[String] = []
+	if _ready_seed != TEST_SEED:
+		failures.append("expected seed %d, got %d" % [TEST_SEED, _ready_seed])
+
+	var navigation_region := _main.get_node("NavigationRegion3D") as NavigationRegion3D
+	var generator := _main.get_node("NavigationRegion3D/MapGenerator")
+	var player := _main.get_node("Player") as CharacterBody3D
+	var monster := _main.get_node("demomonster") as CharacterBody3D
+	var rooms := generator.get_node("Rooms")
+	var corridors := generator.get_node("Corridors")
+	_validate_visible_doors(generator, player, failures)
+	_validate_elevator_door(generator, failures)
+	await _validate_start_elevator_exit(generator, failures)
+	await _validate_elevator_door_motion(generator, player, failures)
+	_validate_random_ceiling_variants(rooms, corridors, failures)
+	if navigation_region.navigation_mesh.get_polygon_count() <= 0:
+		failures.append("runtime NavigationMesh has no polygons")
+	if rooms.get_child_count() != 6:
+		failures.append("runtime map does not contain six rooms")
+	if player.process_mode == Node.PROCESS_MODE_DISABLED:
+		failures.append("player remained disabled after baking")
+	if monster.process_mode == Node.PROCESS_MODE_DISABLED:
+		failures.append("monster remained disabled after baking")
+	if monster.player != player:
+		failures.append("monster player reference is incorrect")
+
+	var map_rid := navigation_region.get_navigation_map()
+	for role: String in ["Start", "Goal"]:
+		var elevator_terminal := generator.get_node("%sElevatorTerminal" % role) as Node3D
+		var elevator_front := elevator_terminal.global_transform * Vector3(0.0, 0.45, -2.0)
+		for room: Node3D in rooms.get_children():
+			var room_start := room.global_position + Vector3(0.0, 0.45, 0.0)
+			var path := NavigationServer3D.map_get_path(map_rid, room_start, elevator_front, true)
+			if path.is_empty():
+				failures.append("%s has no navigation path to the %s elevator" % [room.name, role.to_lower()])
+	var start_terminal := generator.get_node("StartElevatorTerminal") as Node3D
+	var player_in_start := start_terminal.to_local(player.global_position)
+	if (
+		absf(player_in_start.x) > 1.1
+		or player_in_start.z < 0.2
+		or player_in_start.z > 2.7
+		or player_in_start.y < -0.2
+		or player_in_start.y > 1.0
+	):
+		failures.append("player did not spawn inside the start elevator")
+	if not is_equal_approx(player.global_rotation.y, generator.player_spawn_yaw):
+		failures.append("player did not face the start elevator exit")
+
+	var chase_path := NavigationServer3D.map_get_path(
+		map_rid,
+		monster.global_position,
+		player.global_position,
+		true
+	)
+	if chase_path.is_empty():
+		failures.append("monster spawn has no path to player spawn")
+
+	_main.free()
+	if failures.is_empty():
+		print("Validated runtime generation, NavigationMesh, and all room-to-elevator paths.")
+		quit(0)
+	else:
+		for failure: String in failures:
+			push_error(failure)
+		quit(1)
+
+
+func _validate_random_ceiling_variants(
+	rooms: Node,
+	corridors: Node,
+	failures: Array[String],
+) -> void:
+	var lighted_corridor_count := 0
+	var unlighted_corridor_count := 0
+	for room: Node3D in rooms.get_children():
+		var variant: String = room.get_meta("generated_ceiling_variant", "")
+		var ceiling := room.get_node_or_null("Structure/Ceiling")
+		if ceiling == null:
+			failures.append("%s has no generated ceiling" % room.name)
+			continue
+		_validate_ceiling_lights(room.name, variant, ceiling, failures)
+
+	for corridor: Node3D in corridors.get_children():
+		var variant: String = corridor.get_meta("generated_ceiling_variant", "")
+		if variant == "with_light":
+			lighted_corridor_count += 1
+		elif variant == "normal":
+			unlighted_corridor_count += 1
+		var ceiling := corridor.get_node_or_null("Ceiling/CeilingSurface")
+		if ceiling == null:
+			failures.append("%s has no generated ceiling" % corridor.name)
+			continue
+		_validate_ceiling_lights(corridor.name, variant, ceiling, failures)
+	if corridors.get_child_count() >= 2:
+		if lighted_corridor_count == 0:
+			failures.append("generated map has no lighted corridor ceiling")
+		if unlighted_corridor_count == 0:
+			failures.append("generated map has no unlighted corridor ceiling")
+
+
+func _validate_ceiling_lights(
+	owner_name: String,
+	variant: String,
+	ceiling: Node,
+	failures: Array[String],
+) -> void:
+	if variant != "normal" and variant != "with_light":
+		failures.append("%s has invalid ceiling variant metadata: %s" % [owner_name, variant])
+		return
+	var has_lights := not ceiling.find_children("*", "Light3D", true, false).is_empty()
+	if variant == "with_light" and not has_lights:
+		failures.append("%s selected a lighted ceiling without lights" % owner_name)
+	elif variant == "normal" and has_lights:
+		failures.append("%s selected a normal ceiling that contains lights" % owner_name)
+	for node: Node in ceiling.find_children("*", "Light3D", true, false):
+		var light := node as Light3D
+		if light.light_energy <= 0.0:
+			failures.append("%s contains a ceiling light with no emitted energy" % owner_name)
+		if light is OmniLight3D and (light as OmniLight3D).omni_range <= 0.0:
+			failures.append("%s contains a ceiling light with no effective range" % owner_name)
+
+
+func _validate_visible_doors(generator: Node, player: CharacterBody3D, failures: Array[String]) -> void:
+	var doors := generator.get_node("Rooms").find_children(
+		"InteractiveDoor", "AnimatableBody3D", true, false
+	)
+	if doors.size() != generator.generated_door_count:
+		failures.append("runtime visible door count does not match generator metadata")
+	var camera := player.get_node("PlayerCamera") as Camera3D
+	for door: AnimatableBody3D in doors:
+		var entrance_wall := door.get_parent() as Node3D
+		var expected_position := entrance_wall.global_transform * door.position
+		if door.global_position.distance_to(expected_position) > 0.01:
+			failures.append("%s did not inherit its entrance wall transform" % door.get_path())
+		if door.global_position.y < 0.0:
+			failures.append("%s remained below the room floor" % door.get_path())
+		var visible_meshes := 0
+		var combined_bounds := AABB()
+		for mesh: MeshInstance3D in door.find_children("*", "MeshInstance3D", true, false):
+			if mesh.visible and mesh.layers & camera.cull_mask != 0:
+				visible_meshes += 1
+				var world_bounds := mesh.global_transform * mesh.get_aabb()
+				combined_bounds = world_bounds if combined_bounds.size == Vector3.ZERO else combined_bounds.merge(world_bounds)
+		if visible_meshes == 0:
+			failures.append("%s has no mesh visible to PlayerCamera" % door.get_path())
+		elif combined_bounds.size.length() < 0.1:
+			failures.append("%s has an empty visual AABB" % door.get_path())
+
+
+func _validate_elevator_door(generator: Node, failures: Array[String]) -> void:
+	for role: String in ["Start", "Goal"]:
+		var door := generator.get_node("%sElevatorTerminal/ElevatorDoor" % role) as Node3D
+		if role == "Start" and door.get("is_open"):
+			failures.append("start elevator door opened before the player approached")
+		elif role == "Start" and not (door.get("_nearby_players") as Dictionary).is_empty():
+			failures.append("start spawn incorrectly activated the elevator door sensor")
+		elif role == "Goal" and door.get("is_open"):
+			failures.append("goal elevator door opened before the power outage")
+		var panels := door.find_children("DoorPanel*", "AnimatableBody3D", false, false)
+		if panels.size() != 2:
+			failures.append("%s elevator does not contain two sliding door panels" % role.to_lower())
+		for panel: AnimatableBody3D in panels:
+			var expected_position := door.global_transform * panel.position
+			if panel.global_position.distance_to(expected_position) > 0.01:
+				failures.append("%s did not inherit its positioned parent transform" % panel.name)
+			if panel.global_position.y < 0.0:
+				failures.append("%s remained below the floor" % panel.name)
+
+
+func _validate_start_elevator_exit(generator: Node, failures: Array[String]) -> void:
+	var terminal := generator.get_node("StartElevatorTerminal") as Node3D
+	var door := terminal.get_node("ElevatorDoor") as Node3D
+	var left_panel := door.get_node("DoorPanelLeft") as AnimatableBody3D
+	var right_panel := door.get_node("DoorPanelRight") as AnimatableBody3D
+	var left_closed: Vector3 = door.get("_left_closed_position")
+	var right_closed: Vector3 = door.get("_right_closed_position")
+	var animation_duration: float = door.get("animation_duration")
+	var exiting_player := CharacterBody3D.new()
+	exiting_player.add_to_group(&"player")
+	root.add_child(exiting_player)
+	exiting_player.global_position = terminal.global_transform * Vector3(0.0, 0.45, 0.0)
+	door.call("_on_proximity_body_entered", exiting_player)
+	await create_timer(animation_duration + 0.1).timeout
+	if not door.get("is_open"):
+		failures.append("start elevator door did not open near the doorway")
+	exiting_player.global_position = terminal.global_transform * Vector3(0.0, 0.45, -1.0)
+	door.call("_on_proximity_body_exited", exiting_player)
+	await create_timer(animation_duration + 0.1).timeout
+	if door.get("is_open"):
+		failures.append("start elevator door remained open after the player exited")
+	if not left_panel.position.is_equal_approx(left_closed):
+		failures.append("start elevator left door did not close after exit")
+	if not right_panel.position.is_equal_approx(right_closed):
+		failures.append("start elevator right door did not close after exit")
+	exiting_player.free()
+
+
+func _validate_elevator_door_motion(
+	generator: Node,
+	player: CharacterBody3D,
+	failures: Array[String],
+) -> void:
+	var door := generator.get_node("GoalElevatorTerminal/ElevatorDoor") as Node3D
+	var left_panel := door.get_node("DoorPanelLeft") as AnimatableBody3D
+	var right_panel := door.get_node("DoorPanelRight") as AnimatableBody3D
+	var left_closed := left_panel.position
+	var right_closed := right_panel.position
+	var slide_distance: float = door.get("slide_distance")
+	var animation_duration: float = door.get("animation_duration")
+
+	door.call("on_power_outage")
+	door.call("_on_proximity_body_entered", player)
+	await create_timer(animation_duration + 0.1).timeout
+	if not left_panel.position.is_equal_approx(left_closed + Vector3.LEFT * slide_distance):
+		failures.append("left elevator door did not slide left when opening")
+	if not right_panel.position.is_equal_approx(right_closed + Vector3.RIGHT * slide_distance):
+		failures.append("right elevator door did not slide right when opening")
+
+	door.call("_on_proximity_body_exited", player)
+	await create_timer(animation_duration + 0.1).timeout
+	if not left_panel.position.is_equal_approx(left_closed):
+		failures.append("left elevator door did not return to its closed position")
+	if not right_panel.position.is_equal_approx(right_closed):
+		failures.append("right elevator door did not return to its closed position")

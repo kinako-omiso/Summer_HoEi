@@ -1,0 +1,62 @@
+[gd_scene format=3 uid="uid://fq3k3jygpu0k"]
+
+[ext_resource type="Script" uid="uid://blpw28rvfygfm" path="res://temp_main.gd" id="1_main"]
+[ext_resource type="PackedScene" uid="uid://c4y6xxtcor5q3" path="res://player.tscn" id="2_player"]
+[ext_resource type="PackedScene" uid="uid://dqwbx620higo1" path="res://demomonster/demomonster.tscn" id="3_monster"]
+[ext_resource type="PackedScene" path="res://components/map/map_generator.tscn" id="4_generator"]
+[ext_resource type="PackedScene" uid="uid://dt4qgt2esabt6" path="res://result_user_interface.tscn" id="5_xcf3y"]
+[ext_resource type="AudioStream" uid="uid://cjdfe855e54no" path="res://assets/Music/BrokenMachine7.wav" id="6_bgm"]
+[ext_resource type="AudioStream" uid="uid://c05625y41h8qm" path="res://assets/Music/Announcement1(1).wav" id="7_announcement_1"]
+[ext_resource type="AudioStream" uid="uid://ccs8xh4ewui6g" path="res://assets/Music/Announcement2(1).wav" id="8_announcement_2"]
+
+[sub_resource type="NavigationMesh" id="NavigationMesh_runtime"]
+geometry_parsed_geometry_type = 1
+geometry_collision_mask = 4
+cell_size = 0.1
+agent_height = 2.0
+agent_radius = 0.3
+agent_max_climb = 0.5
+
+[sub_resource type="Environment" id="Environment_runtime"]
+background_mode = 1
+background_color = Color(0.015, 0.018, 0.025, 1)
+background_energy_multiplier = 0.0
+ambient_light_source = 3
+ambient_light_energy = 0.0
+
+[node name="TempMain" type="Node" unique_id=673077450]
+script = ExtResource("1_main")
+bgm_volume_db = 0.0
+announcement_bgm_volume_db = -40.0
+
+[node name="NavigationRegion3D" type="NavigationRegion3D" parent="." unique_id=748385280]
+navigation_mesh = SubResource("NavigationMesh_runtime")
+
+[node name="MapGenerator" parent="NavigationRegion3D" unique_id=682395499 instance=ExtResource("4_generator")]
+
+[node name="Player" parent="." unique_id=821346678 instance=ExtResource("2_player")]
+process_mode = 4
+
+[node name="demomonster" parent="." unique_id=962347810 node_paths=PackedStringArray("player") instance=ExtResource("3_monster")]
+process_mode = 4
+player = NodePath("../Player")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=548839510]
+environment = SubResource("Environment_runtime")
+
+[node name="BGMPlayer" type="AudioStreamPlayer" parent="." unique_id=1872239753]
+stream = ExtResource("6_bgm")
+
+[node name="Announcement1Player" type="AudioStreamPlayer" parent="." unique_id=1411407260]
+stream = ExtResource("7_announcement_1")
+
+[node name="Announcement2Player" type="AudioStreamPlayer" parent="." unique_id=746606756]
+stream = ExtResource("8_announcement_2")
+
+[node name="ResultUserInterface" parent="." unique_id=1197500075 instance=ExtResource("5_xcf3y")]
+
+[connection signal="hit" from="Player" to="." method="_on_player_hit"]
+[connection signal="survive" from="Player" to="." method="_on_player_survive"]
+[connection signal="finished" from="BGMPlayer" to="." method="_on_bgm_player_finished"]
+[connection signal="finished" from="Announcement1Player" to="." method="_on_game_start_announcement_finished"]
+[connection signal="finished" from="Announcement2Player" to="." method="_on_breaker_announcement_finished"]

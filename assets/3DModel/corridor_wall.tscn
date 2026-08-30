@@ -1,0 +1,18 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="PackedScene" path="res://assets/3DModel/corridor_wall.glb" id="1_model"]
+[ext_resource type="Script" path="res://world_surface.gd" id="2_script"]
+
+[sub_resource type="BoxShape3D" id="BoxShape_model"]
+size = Vector3(28, 6, 0.26)
+
+[node name="CorridorWall" type="StaticBody3D"]
+collision_layer = 4
+collision_mask = 0
+script = ExtResource("2_script")
+
+[node name="Model" parent="." instance=ExtResource("1_model")]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+position = Vector3(0, 0, 0)
+shape = SubResource("BoxShape_model")

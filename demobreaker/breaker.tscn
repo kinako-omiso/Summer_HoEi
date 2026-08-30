@@ -1,0 +1,44 @@
+[gd_scene format=3 uid="uid://dtwqe00ewj4d"]
+
+[ext_resource type="Script" uid="uid://bafdgvvgwfh61" path="res://world_surface.gd" id="1_51g7k"]
+[ext_resource type="Script" uid="uid://7x4e6n5h1xpf" path="res://demobreaker/breaker.gd" id="1_k3pt2"]
+[ext_resource type="PackedScene" uid="uid://c0qyote2mely8" path="res://demobreaker/interactive_breaker.tscn" id="3_mndru"]
+[ext_resource type="PackedScene" uid="uid://c1oyfieyljyev" path="res://assets/3DModel/breaker_new.glb" id="4_k3pt2"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_k8684"]
+size = Vector3(0.5046387, 1, 0.23236084)
+
+[node name="BreakerManager" type="Node3D" unique_id=1977523128 groups=["map_breaker"]]
+script = ExtResource("1_k3pt2")
+
+[node name="Breaker" type="StaticBody3D" parent="." unique_id=1162135650]
+transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 0, 0, 0.084869385)
+collision_layer = 4
+collision_mask = 0
+script = ExtResource("1_51g7k")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Breaker" unique_id=565725886]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.00012207031, 0, 0.12704468)
+shape = SubResource("BoxShape3D_k8684")
+
+[node name="InteractiveBreaker" parent="Breaker" unique_id=886787038 instance=ExtResource("3_mndru")]
+transform = Transform3D(1, 0, 0, 0, 0.8660254, 0.5, 0, -0.5, 0.8660254, 0, 0, -0.13396025)
+
+[node name="breaker_new" parent="Breaker" unique_id=85071855 instance=ExtResource("4_k3pt2")]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0, 0, 0)
+
+[node name="BreakerLightG" type="OmniLight3D" parent="Breaker" unique_id=492227878]
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 0.3212949, -0.7332182, 0)
+layers = 5
+light_color = Color(0.15919259, 0.82118136, 0.1631239, 1)
+light_energy = 0.0
+omni_range = 1.0
+
+[node name="BreakerLightR" type="OmniLight3D" parent="Breaker" unique_id=165239112]
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 0.5675669, -0.7332182, 0)
+layers = 5
+light_color = Color(1, 0.21268043, 0.15969583, 1)
+light_energy = 0.0
+omni_range = 1.0
+
+[connection signal="breaker_off" from="Breaker/InteractiveBreaker" to="." method="_on_interactive_breaker_breaker_off"]

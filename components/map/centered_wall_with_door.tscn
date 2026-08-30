@@ -1,0 +1,26 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="PackedScene" path="res://assets/3DModel/wall_no_door.tscn" id="1_wall"]
+[ext_resource type="PackedScene" uid="uid://ct5xpy3mhlr6q" path="res://assets/3DModel/door_interactive.tscn" id="2_door"]
+
+[node name="CenteredWallWithDoor" type="Node3D"]
+
+[node name="WallLeft" parent="." instance=ExtResource("1_wall")]
+position = Vector3(-4, 0, 0)
+scale = Vector3(0.428571, 1, 1)
+
+[node name="WallRight" parent="." instance=ExtResource("1_wall")]
+position = Vector3(4, 0, 0)
+scale = Vector3(0.428571, 1, 1)
+
+[node name="WallHeader" parent="." instance=ExtResource("1_wall")]
+position = Vector3(0, 2, 0)
+scale = Vector3(0.142857, 0.333333, 1)
+
+[node name="InteractiveDoor" parent="." node_paths=PackedStringArray("navigation_link") instance=ExtResource("2_door")]
+position = Vector3(-1, -1, 0)
+navigation_link = NodePath("../NavigationLink3D")
+
+[node name="NavigationLink3D" type="NavigationLink3D" parent="." groups=["doors"]]
+start_position = Vector3(0, -2.5, 1)
+end_position = Vector3(0, -2.5, -1)

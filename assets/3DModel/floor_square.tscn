@@ -1,0 +1,23 @@
+[gd_scene format=3 uid="uid://c5nhxy31s2txk"]
+
+[ext_resource type="PackedScene" uid="uid://bugvnu7o8jwuk" path="res://assets/3DModel/floor_square.glb" id="1_model"]
+[ext_resource type="Script" uid="uid://bafdgvvgwfh61" path="res://world_surface.gd" id="2_script"]
+
+[sub_resource type="BoxShape3D" id="BoxShape_floor"]
+size = Vector3(14, 0.3, 14)
+
+[node name="FloorSquare" type="StaticBody3D" unique_id=1752891933]
+collision_layer = 4
+collision_mask = 0
+script = ExtResource("2_script")
+
+[node name="Model" parent="." unique_id=972861942 instance=ExtResource("1_model")]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=291179967]
+shape = SubResource("BoxShape_floor")
+
+[node name="AreaLight3D" type="AreaLight3D" parent="." unique_id=156566534 groups=["lights"]]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, 0)
+layers = 4
+light_energy = 3.0
+area_range = 15.0
