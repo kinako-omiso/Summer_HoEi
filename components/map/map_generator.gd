@@ -13,6 +13,8 @@ const ROOM_WALL_HEIGHT := 3.15
 const CORRIDOR_SOURCE_LENGTH := 28.0
 const FLOOR_EMISSION_COLOR := Color(0.38, 0.46, 0.56)
 const FLOOR_EMISSION_ENERGY := 0.10
+const WALL_EMISSION_COLOR := Color(0.55, 0.62, 0.72)
+const WALL_EMISSION_ENERGY := 0.16
 const MAX_LAYOUT_ATTEMPTS := 160
 const DOOR_SWING_CLEARANCE := AABB(
 	Vector3(-1.4, -3.2, -0.35),
@@ -184,6 +186,8 @@ func _try_build_compact_layout() -> Dictionary:
 			"length": start.distance_to(end),
 			"first_room": first_index,
 			"second_room": second_index,
+			"first_side": first_side,
+			"second_side": second_side,
 			"elevator_side": "",
 			"elevator_role": "",
 		})
@@ -430,8 +434,16 @@ func _instantiate_layout(layout: Dictionary) -> void:
 
 	var corridors: Array = layout["corridors"]
 	var corridor_light_variants := _build_corridor_light_variants(corridors.size())
+	var unlit_corridor_sides_by_room: Dictionary = {}
+	for room_index: int in range(layout["rooms"].size()):
+		unlit_corridor_sides_by_room[room_index] = [] as Array[String]
 	for corridor_index: int in range(corridors.size()):
 		var corridor: Dictionary = corridors[corridor_index]
+		if not corridor_light_variants[corridor_index]:
+			var first_sides: Array = unlit_corridor_sides_by_room[corridor["first_room"]]
+			var second_sides: Array = unlit_corridor_sides_by_room[corridor["second_room"]]
+			first_sides.append(corridor["first_side"])
+			second_sides.append(corridor["second_side"])
 		_add_corridor_edge(
 			corridors_root,
 			corridor["from"],
@@ -462,6 +474,21 @@ func _instantiate_layout(layout: Dictionary) -> void:
 			"pillars": _prune_candidate_group(room, &"pillar"),
 		}
 		var door_report := _configure_room_walls(room, entrances, elevator_side)
+		var room_has_lights: bool = (
+			room.get_meta("generated_ceiling_variant", "") == "with_light"
+		)
+		if not room_has_lights:
+			_make_room_walls_dimly_emissive(room)
+		else:
+			_make_room_entrance_walls_dimly_emissive(
+				room,
+				unlit_corridor_sides_by_room[room_index],
+			)
+		room.set_meta("wall_is_emissive", not room_has_lights)
+		room.set_meta(
+			"generated_unlit_corridor_sides",
+			unlit_corridor_sides_by_room[room_index].duplicate(),
+		)
 		room.set_meta("generated_room_type", room_spec["type"])
 		room.set_meta("generated_room_scene", room_spec["scene_path"])
 		room.set_meta("generated_entrance_count", entrances.size())
@@ -854,6 +881,29 @@ func _make_surface_dimly_emissive(
 			emissive_material.emission_texture = source_material.albedo_texture
 			emissive_material.emission_energy_multiplier = emission_energy
 			mesh_instance.set_surface_override_material(surface_index, emissive_material)
+
+
+func _make_room_walls_dimly_emissive(room: Node3D) -> void:
+	var structure := room.get_node_or_null("Structure")
+	if structure == null:
+		return
+	for wall: Node in structure.find_children("Wall*", "StaticBody3D", true, false):
+		_make_surface_dimly_emissive(wall, WALL_EMISSION_COLOR, WALL_EMISSION_ENERGY)
+
+
+func _make_room_entrance_walls_dimly_emissive(
+	room: Node3D,
+	entrance_sides: Array,
+) -> void:
+	var structure := room.get_node_or_null("Structure")
+	if structure == null:
+		return
+	for side: String in entrance_sides:
+		var entrance := structure.get_node_or_null("Entrance%s" % side.capitalize())
+		if entrance == null:
+			continue
+		for wall: Node in entrance.find_children("Wall*", "StaticBody3D", true, false):
+			_make_surface_dimly_emissive(wall, WALL_EMISSION_COLOR, WALL_EMISSION_ENERGY)
 
 
 func _add_elevator_terminal(

@@ -44,12 +44,13 @@ func configure(
 			module_length,
 			elevator_opening_width,
 		)
-	_make_walls_dimly_emissive()
 	if ceiling_source_runs_along_x:
+		_make_walls_dimly_emissive()
 		_make_surface_dimly_emissive($Floor, FLOOR_EMISSION_COLOR, FLOOR_EMISSION_ENERGY)
 	set_meta("corridor_module_length", module_length)
 	set_meta("corridor_visual_length", module_length)
-	set_meta("wall_emission_energy", WALL_EMISSION_ENERGY)
+	set_meta("wall_emission_energy", WALL_EMISSION_ENERGY if ceiling_source_runs_along_x else 0.0)
+	set_meta("wall_is_emissive", ceiling_source_runs_along_x)
 	set_meta("floor_is_emissive", ceiling_source_runs_along_x)
 
 

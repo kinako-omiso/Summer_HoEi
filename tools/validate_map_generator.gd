@@ -427,6 +427,22 @@ func _validate_instantiated_map(generator: Node, failures: Array[String]) -> voi
 				room.get_node("Structure/Floor"), 0.099
 			):
 				failures.append("%s unlit room floor material is not emissive" % room.name)
+			if room.get_meta("wall_is_emissive", false) == room_has_lights:
+				failures.append("%s wall emission does not match its ceiling variant" % room.name)
+			elif not room_has_lights and not _walls_are_emissive(room):
+				failures.append("%s unlit room wall material is not emissive" % room.name)
+			if room_has_lights:
+				var unlit_corridor_sides: Array = room.get_meta(
+					"generated_unlit_corridor_sides", []
+				)
+				for side: String in unlit_corridor_sides:
+					var entrance := room.get_node_or_null(
+						"Structure/Entrance%s" % side.capitalize()
+					) as Node3D
+					if entrance == null or not _walls_are_emissive(entrance):
+						failures.append(
+							"%s wall facing an unlit corridor is not emissive" % room.name
+						)
 		var map_breakers := rooms_root.find_children("*", "Node3D", true, false).filter(
 			func(node: Node) -> bool: return node.is_in_group(&"map_breaker")
 		)
@@ -448,13 +464,13 @@ func _validate_instantiated_map(generator: Node, failures: Array[String]) -> voi
 				failures.append("%s floor collision leaves a navigation seam" % corridor.name)
 			if not _corridor_walls_fit_between_rooms(corridor, corridor_length):
 				failures.append("%s visible walls extend into a room" % corridor.name)
-			if not is_equal_approx(corridor.get_meta("wall_emission_energy", 0.0), 0.16):
-				failures.append("%s corridor wall emission is missing" % corridor.name)
-			elif not _corridor_walls_are_emissive(corridor):
-				failures.append("%s corridor wall material is not emissive" % corridor.name)
 			var corridor_has_lights := (
 				corridor.get_meta("generated_ceiling_variant", "") == "with_light"
 			)
+			if corridor.get_meta("wall_is_emissive", false) == corridor_has_lights:
+				failures.append("%s wall emission does not match its ceiling variant" % corridor.name)
+			elif not corridor_has_lights and not _walls_are_emissive(corridor):
+				failures.append("%s unlit corridor wall material is not emissive" % corridor.name)
 			if corridor.get_meta("floor_is_emissive", false) == corridor_has_lights:
 				failures.append("%s floor emission does not match its ceiling variant" % corridor.name)
 			elif not corridor_has_lights and not _surface_is_emissive(
@@ -522,9 +538,9 @@ func _validate_instantiated_map(generator: Node, failures: Array[String]) -> voi
 			failures.append("player spawn is not inside the start elevator")
 
 
-func _corridor_walls_are_emissive(corridor: Node3D) -> bool:
+func _walls_are_emissive(root_node: Node3D) -> bool:
 	var found_wall_surface := false
-	for wall: Node in corridor.find_children("Wall*", "StaticBody3D", false, false):
+	for wall: Node in root_node.find_children("Wall*", "StaticBody3D", true, false):
 		for mesh_instance: MeshInstance3D in wall.find_children(
 			"*", "MeshInstance3D", true, false
 		):
