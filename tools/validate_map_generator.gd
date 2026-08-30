@@ -420,6 +420,13 @@ func _validate_instantiated_map(generator: Node, failures: Array[String]) -> voi
 			var entrance_nodes := room.find_children("Entrance*", "Node3D", true, false)
 			if entrance_nodes.size() != entrance_count:
 				failures.append("%s entrance node count does not match metadata" % room.name)
+			var room_has_lights := room.get_meta("generated_ceiling_variant", "") == "with_light"
+			if room.get_meta("floor_is_emissive", false) == room_has_lights:
+				failures.append("%s floor emission does not match its ceiling variant" % room.name)
+			elif not room_has_lights and not _surface_is_emissive(
+				room.get_node("Structure/Floor"), 0.099
+			):
+				failures.append("%s unlit room floor material is not emissive" % room.name)
 		var map_breakers := rooms_root.find_children("*", "Node3D", true, false).filter(
 			func(node: Node) -> bool: return node.is_in_group(&"map_breaker")
 		)
@@ -431,6 +438,19 @@ func _validate_instantiated_map(generator: Node, failures: Array[String]) -> voi
 		failures.append("instantiated map has too few room corridors")
 	else:
 		for corridor: Node3D in corridors_root.get_children():
+			if not is_equal_approx(corridor.get_meta("wall_emission_energy", 0.0), 0.16):
+				failures.append("%s corridor wall emission is missing" % corridor.name)
+			elif not _corridor_walls_are_emissive(corridor):
+				failures.append("%s corridor wall material is not emissive" % corridor.name)
+			var corridor_has_lights := (
+				corridor.get_meta("generated_ceiling_variant", "") == "with_light"
+			)
+			if corridor.get_meta("floor_is_emissive", false) == corridor_has_lights:
+				failures.append("%s floor emission does not match its ceiling variant" % corridor.name)
+			elif not corridor_has_lights and not _surface_is_emissive(
+				corridor.get_node("Floor"), 0.099
+			):
+				failures.append("%s unlit corridor floor material is not emissive" % corridor.name)
 			var elevator_side: String = corridor.get_meta("generated_elevator_side", "")
 			if elevator_side.is_empty():
 				continue
@@ -456,6 +476,22 @@ func _validate_instantiated_map(generator: Node, failures: Array[String]) -> voi
 		var expected_role := role.to_lower()
 		if elevator.get("elevator_role") != expected_role:
 			failures.append("%s elevator has the wrong role" % expected_role)
+		var elevator_light := elevator.get_node_or_null("CeilingLight") as OmniLight3D
+		if expected_role == "start":
+			if elevator_light == null:
+				failures.append("start elevator ceiling light is missing")
+			elif not elevator_light.position.is_equal_approx(Vector3(0.0, 2.45, -2.28)):
+				failures.append("start elevator light is not below its ceiling fixture")
+			elif not elevator_light.is_in_group(&"lights"):
+				failures.append("start elevator ceiling light is not switchable")
+			elif (
+				not is_equal_approx(elevator_light.light_energy, 4.0)
+				or not is_equal_approx(elevator_light.omni_range, 10.0)
+				or not is_equal_approx(elevator_light.omni_attenuation, 1.25)
+			):
+				failures.append("start elevator light does not match ceiling lights")
+		elif elevator_light != null:
+			failures.append("goal elevator must not contain the start light")
 		var completion_area := elevator.get_node_or_null("GallePost") as Area3D
 		if completion_area == null:
 			failures.append("%s elevator completion area is missing" % expected_role)
@@ -474,3 +510,42 @@ func _validate_instantiated_map(generator: Node, failures: Array[String]) -> voi
 		var expected_spawn := start_terminal.global_transform * Vector3(0.0, 0.45, 2.6)
 		if not generator.player_spawn_position.is_equal_approx(expected_spawn):
 			failures.append("player spawn is not inside the start elevator")
+
+
+func _corridor_walls_are_emissive(corridor: Node3D) -> bool:
+	var found_wall_surface := false
+	for wall: Node in corridor.find_children("Wall*", "StaticBody3D", false, false):
+		for mesh_instance: MeshInstance3D in wall.find_children(
+			"*", "MeshInstance3D", true, false
+		):
+			if mesh_instance.mesh == null:
+				continue
+			for surface_index: int in range(mesh_instance.mesh.get_surface_count()):
+				found_wall_surface = true
+				var material := (
+					mesh_instance.get_active_material(surface_index) as BaseMaterial3D
+				)
+				if material == null or not material.emission_enabled:
+					return false
+				if material.emission_energy_multiplier < 0.159:
+					return false
+	return found_wall_surface
+
+
+func _surface_is_emissive(surface_root: Node, minimum_energy: float) -> bool:
+	var found_surface := false
+	for mesh_instance: MeshInstance3D in surface_root.find_children(
+		"*", "MeshInstance3D", true, false
+	):
+		if mesh_instance.mesh == null:
+			continue
+		for surface_index: int in range(mesh_instance.mesh.get_surface_count()):
+			found_surface = true
+			var material := (
+				mesh_instance.get_active_material(surface_index) as BaseMaterial3D
+			)
+			if material == null or not material.emission_enabled:
+				return false
+			if material.emission_energy_multiplier < minimum_energy:
+				return false
+	return found_surface

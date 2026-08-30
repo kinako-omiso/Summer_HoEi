@@ -6,6 +6,10 @@ const BAKE_SEAM_OVERLAP := 0.2
 const SOURCE_WALL_HEIGHT := 6.0
 const ELEVATOR_HEADER_HEIGHT := 1.380096
 const ELEVATOR_HEADER_CENTER_Y := 5.459953
+const WALL_EMISSION_COLOR := Color(0.55, 0.62, 0.72)
+const WALL_EMISSION_ENERGY := 0.16
+const FLOOR_EMISSION_COLOR := Color(0.38, 0.46, 0.56)
+const FLOOR_EMISSION_ENERGY := 0.10
 
 
 func configure(
@@ -38,7 +42,41 @@ func configure(
 			module_length,
 			elevator_opening_width,
 		)
+	_make_walls_dimly_emissive()
+	if ceiling_source_runs_along_x:
+		_make_surface_dimly_emissive($Floor, FLOOR_EMISSION_COLOR, FLOOR_EMISSION_ENERGY)
 	set_meta("corridor_module_length", module_length)
+	set_meta("wall_emission_energy", WALL_EMISSION_ENERGY)
+	set_meta("floor_is_emissive", ceiling_source_runs_along_x)
+
+
+func _make_walls_dimly_emissive() -> void:
+	for wall: Node in find_children("Wall*", "StaticBody3D", false, false):
+		_make_surface_dimly_emissive(wall, WALL_EMISSION_COLOR, WALL_EMISSION_ENERGY)
+
+
+func _make_surface_dimly_emissive(
+	surface_root: Node,
+	emission_color: Color,
+	emission_energy: float,
+) -> void:
+	for mesh_instance: MeshInstance3D in surface_root.find_children(
+			"*", "MeshInstance3D", true, false
+		):
+		if mesh_instance.mesh == null:
+			continue
+		for surface_index: int in range(mesh_instance.mesh.get_surface_count()):
+			var source_material := (
+				mesh_instance.get_active_material(surface_index) as BaseMaterial3D
+			)
+			if source_material == null:
+				continue
+			var emissive_material := source_material.duplicate() as BaseMaterial3D
+			emissive_material.emission_enabled = true
+			emissive_material.emission = emission_color
+			emissive_material.emission_texture = source_material.albedo_texture
+			emissive_material.emission_energy_multiplier = emission_energy
+			mesh_instance.set_surface_override_material(surface_index, emissive_material)
 
 
 func _create_elevator_opening(

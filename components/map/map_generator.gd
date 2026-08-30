@@ -11,6 +11,8 @@ const ROOM_HALF_SIZE := 7.0
 const ROOM_WALL_OFFSET := 6.87
 const ROOM_WALL_HEIGHT := 3.15
 const CORRIDOR_SOURCE_LENGTH := 28.0
+const FLOOR_EMISSION_COLOR := Color(0.38, 0.46, 0.56)
+const FLOOR_EMISSION_ENERGY := 0.10
 const MAX_LAYOUT_ATTEMPTS := 160
 const DOOR_SWING_CLEARANCE := AABB(
 	Vector3(-1.4, -3.2, -0.35),
@@ -52,6 +54,10 @@ const ELEVATOR_ENTRANCE_WALL := preload(
 )
 const ELEVATOR := preload("res://assets/3DModel/elevator.tscn")
 const ELEVATOR_DOOR := preload("res://assets/3DModel/elevator_door.tscn")
+const ELEVATOR_LIGHT_POSITION := Vector3(0.0, 2.45, -2.28)
+const CEILING_LIGHT_ENERGY := 4.0
+const CEILING_LIGHT_RANGE := 10.0
+const CEILING_LIGHT_ATTENUATION := 1.25
 
 @export_range(3.0, 20.0, 0.5) var minimum_corridor_length := 3.0
 @export_range(3.0, 20.0, 0.5) var maximum_corridor_length := 20.0
@@ -814,7 +820,40 @@ func _randomize_room_ceiling(room: Node3D) -> void:
 	ceiling.name = "Ceiling"
 	ceiling.transform = ceiling_transform
 	structure.add_child(ceiling)
+	if not ceiling_has_lights:
+		var floor := structure.get_node_or_null("Floor")
+		if floor != null:
+			_make_surface_dimly_emissive(
+				floor,
+				FLOOR_EMISSION_COLOR,
+				FLOOR_EMISSION_ENERGY,
+			)
 	room.set_meta("generated_ceiling_variant", "with_light" if ceiling_has_lights else "normal")
+	room.set_meta("floor_is_emissive", not ceiling_has_lights)
+
+
+func _make_surface_dimly_emissive(
+	surface_root: Node,
+	emission_color: Color,
+	emission_energy: float,
+) -> void:
+	for mesh_instance: MeshInstance3D in surface_root.find_children(
+		"*", "MeshInstance3D", true, false
+	):
+		if mesh_instance.mesh == null:
+			continue
+		for surface_index: int in range(mesh_instance.mesh.get_surface_count()):
+			var source_material := (
+				mesh_instance.get_active_material(surface_index) as BaseMaterial3D
+			)
+			if source_material == null:
+				continue
+			var emissive_material := source_material.duplicate() as BaseMaterial3D
+			emissive_material.emission_enabled = true
+			emissive_material.emission = emission_color
+			emissive_material.emission_texture = source_material.albedo_texture
+			emissive_material.emission_energy_multiplier = emission_energy
+			mesh_instance.set_surface_override_material(surface_index, emissive_material)
 
 
 func _add_elevator_terminal(
@@ -835,6 +874,8 @@ func _add_elevator_terminal(
 	# Room floors top out at Y=0.15. Raising the enclosure by 0.15 aligns
 	# its floor collision with the room and removes the doorway step.
 	elevator.position = Vector3(0.0, 3.15, 4.28)
+	if role == "start":
+		_add_start_elevator_light(elevator)
 
 	var door := ELEVATOR_DOOR.instantiate() as Node3D
 	door.name = "ElevatorDoor"
@@ -844,6 +885,18 @@ func _add_elevator_terminal(
 	# entering the tree. Position its parent first to keep the closed panel at
 	# the elevator entrance instead of synchronized below the floor.
 	parent.add_child(door)
+
+
+func _add_start_elevator_light(elevator: Node3D) -> void:
+	var ceiling_light := OmniLight3D.new()
+	ceiling_light.name = "CeilingLight"
+	ceiling_light.position = ELEVATOR_LIGHT_POSITION
+	ceiling_light.layers = 4
+	ceiling_light.light_energy = CEILING_LIGHT_ENERGY
+	ceiling_light.omni_range = CEILING_LIGHT_RANGE
+	ceiling_light.omni_attenuation = CEILING_LIGHT_ATTENUATION
+	ceiling_light.add_to_group(&"lights")
+	elevator.add_child(ceiling_light)
 
 
 func _prune_candidate_group(room: Node, group_name: StringName) -> int:
