@@ -46,17 +46,31 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 100
 text = " "
 
+[node name="BackButton" type="Button" parent="Control/VBoxContainer" unique_id=1472577783]
+process_mode = 3
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(0.72156864, 1, 0.7294118, 1)
+theme_override_colors/font_hover_color = Color(0, 0, 1, 1)
+theme_override_font_sizes/font_size = 64
+text = "ゲームに戻る"
+
 [node name="RetryButton" type="Button" parent="Control/VBoxContainer" unique_id=1003826043]
 process_mode = 3
 layout_mode = 2
+theme_override_colors/font_color = Color(0.8745098, 0.3254902, 0, 1)
+theme_override_colors/font_hover_color = Color(0, 0.9490196, 0.9490196, 1)
 theme_override_font_sizes/font_size = 64
 text = "t"
 
 [node name="TitleButton" type="Button" parent="Control/VBoxContainer" unique_id=232903561]
 process_mode = 3
 layout_mode = 2
+theme_override_colors/font_color = Color(1, 0, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 0, 1)
 theme_override_font_sizes/font_size = 64
 text = "タイトルに戻る"
 
+[connection signal="pressed" from="Control/VBoxContainer/BackButton" to="." method="_on_back_button_pressed"]
 [connection signal="pressed" from="Control/VBoxContainer/RetryButton" to="." method="_on_retry_button_pressed"]
 [connection signal="pressed" from="Control/VBoxContainer/TitleButton" to="." method="_on_title_button_pressed"]
