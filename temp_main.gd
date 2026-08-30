@@ -29,11 +29,11 @@ var debug_lighting_enabled := true
 var _debug_ambient_energy := 0.0
 var _debug_background_energy := 0.0
 var _breaker_announcement_played := false
+var _breaker_announcement_pending := false
 
 
 func _ready() -> void:
 	_configure_audio_output()
-	_start_bgm()
 	var environment := world_environment.environment
 	if environment != null:
 		_debug_ambient_energy = environment.ambient_light_energy
@@ -115,7 +115,16 @@ func _update_bgm_ducking() -> void:
 	)
 
 
-func _on_announcement_finished() -> void:
+func _on_game_start_announcement_finished() -> void:
+	_start_bgm()
+	if _breaker_announcement_pending:
+		_breaker_announcement_pending = false
+		_play_breaker_announcement()
+	else:
+		_update_bgm_ducking()
+
+
+func _on_breaker_announcement_finished() -> void:
 	_update_bgm_ducking()
 
 
@@ -138,8 +147,17 @@ func _connect_start_elevator_signal() -> void:
 
 
 func _on_breaker_lights_out() -> void:
+	_breaker_announcement_pending = false
+	var game_start_announcement_was_playing := announcement_1_player.playing
+	var announcement_was_stopped := game_start_announcement_was_playing
+	if game_start_announcement_was_playing:
+		announcement_1_player.stop()
 	if announcement_2_player.playing:
 		announcement_2_player.stop()
+		announcement_was_stopped = true
+	if game_start_announcement_was_playing and not bgm_player.playing:
+		_start_bgm()
+	if announcement_was_stopped:
 		_update_bgm_ducking()
 
 
@@ -188,10 +206,17 @@ func _check_breaker_in_center_view() -> void:
 		var breaker := breaker_node as Node3D
 		if breaker != null and _is_breaker_visible_in_center(breaker):
 			_breaker_announcement_played = true
-			announcement_2_player.volume_db = announcement_volume_db
-			announcement_2_player.play()
-			_update_bgm_ducking()
+			if announcement_1_player.playing:
+				_breaker_announcement_pending = true
+			else:
+				_play_breaker_announcement()
 			return
+
+
+func _play_breaker_announcement() -> void:
+	announcement_2_player.volume_db = announcement_volume_db
+	announcement_2_player.play()
+	_update_bgm_ducking()
 
 
 func _is_breaker_visible_in_center(breaker: Node3D) -> bool:
