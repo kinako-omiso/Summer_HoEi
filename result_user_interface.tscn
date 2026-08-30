@@ -38,6 +38,7 @@ grow_vertical = 2
 
 [node name="TitleLabel" type="Label" parent="Control/VBoxContainer" unique_id=1020688991]
 layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 0.81960785, 1)
 theme_override_font_sizes/font_size = 180
 text = "t"
 
@@ -50,24 +51,27 @@ text = " "
 process_mode = 3
 visible = false
 layout_mode = 2
-theme_override_colors/font_color = Color(0.72156864, 1, 0.7294118, 1)
-theme_override_colors/font_hover_color = Color(0, 0, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 0.81960785, 1)
+theme_override_colors/font_focus_color = Color(1, 1, 0.81960785, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 0.81960785, 1)
 theme_override_font_sizes/font_size = 64
 text = "ゲームに戻る"
 
 [node name="RetryButton" type="Button" parent="Control/VBoxContainer" unique_id=1003826043]
 process_mode = 3
 layout_mode = 2
-theme_override_colors/font_color = Color(0.8745098, 0.3254902, 0, 1)
-theme_override_colors/font_hover_color = Color(0, 0.9490196, 0.9490196, 1)
+theme_override_colors/font_color = Color(1, 1, 0.72156864, 1)
+theme_override_colors/font_focus_color = Color(1, 1, 0.81960785, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 0.81960785, 1)
 theme_override_font_sizes/font_size = 64
 text = "t"
 
 [node name="TitleButton" type="Button" parent="Control/VBoxContainer" unique_id=232903561]
 process_mode = 3
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 0, 1, 1)
-theme_override_colors/font_hover_color = Color(1, 1, 0, 1)
+theme_override_colors/font_color = Color(1, 1, 0.84705883, 1)
+theme_override_colors/font_focus_color = Color(1, 1, 0.81960785, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 0.81960785, 1)
 theme_override_font_sizes/font_size = 64
 text = "タイトルに戻る"
 
