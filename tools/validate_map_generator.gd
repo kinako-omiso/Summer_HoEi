@@ -438,6 +438,16 @@ func _validate_instantiated_map(generator: Node, failures: Array[String]) -> voi
 		failures.append("instantiated map has too few room corridors")
 	else:
 		for corridor: Node3D in corridors_root.get_children():
+			var corridor_length: float = corridor.get_meta("centerline_length", 0.0)
+			var floor := corridor.get_node("Floor") as Node3D
+			if not is_equal_approx(floor.scale.z * 28.0, corridor_length):
+				failures.append("%s visible floor extends into a room" % corridor.name)
+			var floor_collision := floor.get_node("CollisionShape3D") as CollisionShape3D
+			var collision_length := floor.scale.z * floor_collision.scale.z * 28.0
+			if collision_length + 0.001 < corridor_length:
+				failures.append("%s floor collision leaves a navigation seam" % corridor.name)
+			if not _corridor_walls_fit_between_rooms(corridor, corridor_length):
+				failures.append("%s visible walls extend into a room" % corridor.name)
 			if not is_equal_approx(corridor.get_meta("wall_emission_energy", 0.0), 0.16):
 				failures.append("%s corridor wall emission is missing" % corridor.name)
 			elif not _corridor_walls_are_emissive(corridor):
@@ -530,6 +540,23 @@ func _corridor_walls_are_emissive(corridor: Node3D) -> bool:
 				if material.emission_energy_multiplier < 0.159:
 					return false
 	return found_wall_surface
+
+
+func _corridor_walls_fit_between_rooms(corridor: Node3D, corridor_length: float) -> bool:
+	var half_length := corridor_length * 0.5
+	for wall: Node in corridor.find_children("Wall*", "StaticBody3D", false, false):
+		for mesh_instance: MeshInstance3D in wall.find_children(
+			"*", "MeshInstance3D", true, false
+		):
+			var mesh_to_corridor := (
+				corridor.global_transform.affine_inverse() * mesh_instance.global_transform
+			)
+			var bounds: AABB = mesh_to_corridor * mesh_instance.get_aabb()
+			if bounds.position.z < -half_length - 0.01:
+				return false
+			if bounds.end.z > half_length + 0.01:
+				return false
+	return true
 
 
 func _surface_is_emissive(surface_root: Node, minimum_energy: float) -> bool:

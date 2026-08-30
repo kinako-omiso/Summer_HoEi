@@ -19,10 +19,12 @@ func configure(
 	elevator_side: String = "",
 	elevator_opening_width: float = 0.0,
 ) -> void:
-	# Slightly overlap adjacent collision boxes so Recast does not split a long
-	# corridor at floating-point seams between scaled source modules.
-	var length_scale := (module_length + BAKE_SEAM_OVERLAP) / SOURCE_LENGTH
+	# Keep visible geometry exactly between the two room walls. Only the floor
+	# collision extends across the thresholds so Recast does not create a seam.
+	var length_scale := module_length / SOURCE_LENGTH
 	$Floor.scale = Vector3(1.0, 1.0, length_scale)
+	var floor_collision := $Floor/CollisionShape3D as CollisionShape3D
+	floor_collision.scale.z = (module_length + BAKE_SEAM_OVERLAP) / module_length
 	var ceiling_surface := ceiling_scene.instantiate() as Node3D
 	ceiling_surface.name = "CeilingSurface"
 	$Ceiling.add_child(ceiling_surface)
@@ -46,6 +48,7 @@ func configure(
 	if ceiling_source_runs_along_x:
 		_make_surface_dimly_emissive($Floor, FLOOR_EMISSION_COLOR, FLOOR_EMISSION_ENERGY)
 	set_meta("corridor_module_length", module_length)
+	set_meta("corridor_visual_length", module_length)
 	set_meta("wall_emission_energy", WALL_EMISSION_ENERGY)
 	set_meta("floor_is_emissive", ceiling_source_runs_along_x)
 
