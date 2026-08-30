@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://dqwbx620higo1"]
 
 [ext_resource type="Script" uid="uid://cj446712mcn8c" path="res://demomonster/demomonster.gd" id="1_3wso1"]
-[ext_resource type="PackedScene" uid="uid://ddvxy4axtx7d6" path="res://assets/3DModel/robot.tscn" id="1_wddve"]
+[ext_resource type="PackedScene" uid="uid://vwjycm8djhca" path="res://assets/3DModel/robot_cc.tscn" id="2_3wso1"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_3wso1"]
 radius = 0.32080078
@@ -15,8 +15,8 @@ interaction_detection_distance = 45.0
 
 [node name="pivod" type="Node3D" parent="." unique_id=213938137]
 
-[node name="robot" parent="pivod" unique_id=1486726242 instance=ExtResource("1_wddve")]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0, 1.0149076, 0)
+[node name="robot_cc" parent="pivod" unique_id=358564966 instance=ExtResource("2_3wso1")]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0, 1.0043797, 0)
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=225296992 groups=["enemy"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4178147, 0)

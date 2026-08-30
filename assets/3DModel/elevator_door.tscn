@@ -1,47 +1,43 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene format=3 uid="uid://bvnl7w4fealvw"]
 
-[ext_resource type="PackedScene" path="res://assets/3DModel/elevator_door.glb" id="1_model"]
-[ext_resource type="Script" path="res://elevator_door.gd" id="2_script"]
+[ext_resource type="PackedScene" uid="uid://dqhe8v28pvwtg" path="res://assets/3DModel/elevator_door_cc.glb" id="2_qyaw2"]
+[ext_resource type="Script" uid="uid://bb2amah37grt6" path="res://elevator_door.gd" id="2_script"]
 
 [sub_resource type="BoxShape3D" id="BoxShape_model"]
 size = Vector3(1.361738, 4.639905, 0.236244)
 
 [sub_resource type="BoxShape3D" id="BoxShape_proximity"]
-size = Vector3(3.0, 2.0, 3.0)
+size = Vector3(3, 2, 3)
 
-[node name="ElevatorDoor" type="Node3D" groups=["elevator_doors"]]
+[node name="ElevatorDoor" type="Node3D" unique_id=456257197 groups=["elevator_doors"]]
 script = ExtResource("2_script")
 
-[node name="DoorPanelLeft" type="AnimatableBody3D" parent="."]
-position = Vector3(-0.680869, 0, 0)
+[node name="DoorPanelLeft" type="AnimatableBody3D" parent="." unique_id=531220083]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.680869, 0, 0)
 collision_layer = 4
 collision_mask = 0
-sync_to_physics = true
 
-[node name="Model" parent="DoorPanelLeft" instance=ExtResource("1_model")]
-position = Vector3(0.636256, 0.301577, 1.549337)
+[node name="elevator_door_cc" parent="DoorPanelLeft" unique_id=20310480 instance=ExtResource("2_qyaw2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.6383919, 0.2975009, 1.551858)
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="DoorPanelLeft"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="DoorPanelLeft" unique_id=51634597]
 shape = SubResource("BoxShape_model")
 
-[node name="DoorPanelRight" type="AnimatableBody3D" parent="."]
-position = Vector3(0.680869, 0, 0)
+[node name="DoorPanelRight" type="AnimatableBody3D" parent="." unique_id=1142952200]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.680869, 0, 0)
 collision_layer = 4
 collision_mask = 0
-sync_to_physics = true
 
-[node name="Model" parent="DoorPanelRight" instance=ExtResource("1_model")]
-position = Vector3(0.636256, 0.301577, 1.549337)
+[node name="elevator_door_cc" parent="DoorPanelRight" unique_id=771870556 instance=ExtResource("2_qyaw2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5867846, 0.29236102, 1.5511123)
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="DoorPanelRight"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="DoorPanelRight" unique_id=1619016274]
 shape = SubResource("BoxShape_model")
 
-[node name="ProximityArea" type="Area3D" parent="."]
-position = Vector3(0, -1.32, -1.5)
+[node name="ProximityArea" type="Area3D" parent="." unique_id=1280434366]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.32, -1.5)
 collision_layer = 0
-collision_mask = 1
-monitoring = true
 monitorable = false
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="ProximityArea"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ProximityArea" unique_id=1978088710]
 shape = SubResource("BoxShape_proximity")

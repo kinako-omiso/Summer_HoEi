@@ -1,0 +1,19 @@
+[gd_scene format=3 uid="uid://vwjycm8djhca"]
+
+[ext_resource type="PackedScene" uid="uid://dvp2s2raprien" path="res://assets/3DModel/robot_cc.glb" id="1_jii3t"]
+[ext_resource type="Script" uid="uid://b4d42v7jdypiw" path="res://robot.gd" id="2_ouqss"]
+
+[node name="robot_cc" unique_id=358564966 instance=ExtResource("1_jii3t")]
+script = ExtResource("2_ouqss")
+
+[node name="円柱_006" parent="." index="6" unique_id=1367798969]
+visible = false
+
+[node name="円柱_007" parent="." index="7" unique_id=502735982]
+visible = false
+
+[node name="円柱_009" parent="." index="9" unique_id=894816831]
+visible = false
+
+[node name="球" parent="." index="41" unique_id=1457100511]
+visible = false
