@@ -1,0 +1,15 @@
+[gd_scene format=3 uid="uid://bciii0qscgaai"]
+
+[ext_resource type="PackedScene" uid="uid://crlu868te3v5k" path="res://assets/3DModel/fire_hydrant.glb" id="1_e34p5"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_k8684"]
+size = Vector3(1.4535522, 1.9994507, 0.14196777)
+
+[node name="FireHydrant" type="StaticBody3D" unique_id=1050456574]
+
+[node name="Model" parent="." unique_id=614840591 instance=ExtResource("1_e34p5")]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, 0, 0, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1893918034]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.007171631, 0.00015258789, -0.0036010742)
+shape = SubResource("BoxShape3D_k8684")
