@@ -3,6 +3,8 @@ extends Node
 
 signal runtime_map_ready(seed_value: int)
 
+const CAPTURE_MOVIE_UI_TIME := 3.71
+
 @export_category("Game Rules")
 @export_range(1, 10, 1) var building_floors_number: int = 3
 
@@ -31,6 +33,7 @@ var is_runtime_map_ready := false
 var _breaker_announcement_played := false
 var _breaker_announcement_pending := false
 var _capture_sequence_playing := false
+var _game_over_ui_shown := false
 
 
 func _ready() -> void:
@@ -191,7 +194,7 @@ func _exit_tree() -> void:
 
 
 func _process(_delta: float) -> void:
-	if not is_runtime_map_ready:
+	if not is_runtime_map_ready or _capture_sequence_playing:
 		return
 	_check_breaker_in_center_view()
 	if camera_change == -1 and Input.is_action_just_pressed("debug_camera_change"):
@@ -203,7 +206,7 @@ func _process(_delta: float) -> void:
 
 
 func _check_breaker_in_center_view() -> void:
-	if _breaker_announcement_played or not player_camera.is_current():
+	if _breaker_announcement_played or not is_instance_valid(player_camera) or not player_camera.is_current():
 		return
 
 	for breaker_node in get_tree().get_nodes_in_group(&"map_breaker"):
@@ -276,9 +279,16 @@ func _on_player_hit() -> void:
 	if capture_movie_player.stream != null:
 		capture_movie_player.show()
 		capture_movie_player.play()
+		_show_game_over_after_capture_time()
 		return
 	_show_game_over_after_capture_movie()
 
+
+func _show_game_over_after_capture_time() -> void:
+	await get_tree().create_timer(CAPTURE_MOVIE_UI_TIME).timeout
+	if not is_inside_tree() or not _capture_sequence_playing:
+		return
+	_show_game_over_after_capture_movie()
 
 func _on_capture_movie_finished() -> void:
 	capture_movie_player.hide()
@@ -286,6 +296,12 @@ func _on_capture_movie_finished() -> void:
 
 
 func _show_game_over_after_capture_movie() -> void:
+	if _game_over_ui_shown:
+		return
+	_game_over_ui_shown = true
+	if is_instance_valid(capture_movie_player):
+		capture_movie_player.stop()
+		capture_movie_player.hide()
 	if result_ui:
 		result_ui.show_game_over()
 
