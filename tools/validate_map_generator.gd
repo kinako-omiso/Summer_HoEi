@@ -50,6 +50,7 @@ func _run_validation() -> void:
 	_validate_elevator_door_fit(generator, failures)
 	_validate_authored_breaker_transforms(generator, failures)
 	_validate_authored_wall_preservation(generator, failures)
+	_validate_furniture_minimum(generator, failures)
 
 	for test_seed: int in range(1, 101):
 		var layout: Dictionary = generator.generate_layout_for_seed(test_seed)
@@ -73,9 +74,16 @@ func _run_validation() -> void:
 			var entrance_count: int = room_spec["entrances"].size()
 			observed_one_entrance = observed_one_entrance or entrance_count == 1
 			observed_three_entrances = observed_three_entrances or entrance_count == 3
+		if available_room_scenes.size() <= ROOM_COUNT:
+			for required_scene_path: String in available_room_scenes:
+				if not selected_scene_paths.has(required_scene_path):
+					failures.append(
+						"seed %d: required room scene was not selected: %s"
+						% [test_seed, required_scene_path]
+					)
 		observed_duplicate_selection = observed_duplicate_selection or selected_scene_paths.size() < ROOM_COUNT
 
-	if not observed_duplicate_selection:
+	if available_room_scenes.size() < ROOM_COUNT and not observed_duplicate_selection:
 		failures.append("room selection with replacement was not exercised")
 	if not observed_extra_connection:
 		failures.append("no loop-producing extra room connection was observed")
@@ -271,6 +279,22 @@ func _validate_authored_wall_preservation(generator: Node, failures: Array[Strin
 	template_room.free()
 
 
+func _validate_furniture_minimum(generator: Node, failures: Array[String]) -> void:
+	for room_scene: PackedScene in [ROOM_A, ROOM_B]:
+		for _sample_index: int in range(50):
+			var room := room_scene.instantiate() as Node3D
+			generator.add_child(room)
+			var candidate_counts: Dictionary = generator.call("_prune_room_candidates", room)
+			var kept_count := 0
+			for count: int in candidate_counts.values():
+				kept_count += count
+			if kept_count < 1:
+				failures.append("%s furniture selection removed every candidate" % room.name)
+				room.free()
+				return
+			room.free()
+
+
 func _collision_bounds_in_wall_space(wall: Node3D, path: String) -> AABB:
 	var collision_shape := wall.get_node(path) as CollisionShape3D
 	var shape_to_wall := wall.global_transform.affine_inverse() * collision_shape.global_transform
@@ -427,6 +451,15 @@ func _validate_instantiated_map(generator: Node, failures: Array[String]) -> voi
 				room.get_node("Structure/Floor"), 0.099
 			):
 				failures.append("%s unlit room floor material is not emissive" % room.name)
+			var candidate_counts: Dictionary = room.get_meta("generated_candidate_counts", {})
+			var kept_furniture_count := 0
+			for count: int in candidate_counts.values():
+				kept_furniture_count += count
+			if (
+				room.get_meta("generated_had_furniture_candidates", false)
+				and kept_furniture_count < 1
+			):
+				failures.append("%s removed every furniture candidate" % room.name)
 			if room.get_meta("wall_is_emissive", false) == room_has_lights:
 				failures.append("%s wall emission does not match its ceiling variant" % room.name)
 			elif not room_has_lights and not _walls_are_emissive(room):
@@ -536,6 +569,35 @@ func _validate_instantiated_map(generator: Node, failures: Array[String]) -> voi
 		var expected_spawn := start_terminal.global_transform * Vector3(0.0, 0.45, 2.6)
 		if not generator.player_spawn_position.is_equal_approx(expected_spawn):
 			failures.append("player spawn is not inside the start elevator")
+	_validate_breaker_disables_emissive_surfaces(generator, failures)
+
+
+func _validate_breaker_disables_emissive_surfaces(
+	generator: Node,
+	failures: Array[String],
+) -> void:
+	var emissive_surfaces := generator.get_tree().get_nodes_in_group(
+		&"power_emissive_surfaces"
+	)
+	if emissive_surfaces.is_empty():
+		failures.append("generated map has no switchable emissive surfaces")
+		return
+	var breakers := generator.get_tree().get_nodes_in_group(&"map_breaker")
+	if breakers.size() != 1:
+		failures.append("cannot validate emissive power-off without one breaker")
+		return
+	breakers[0].emit_signal("lights_out")
+	for node: Node in emissive_surfaces:
+		var mesh_instance := node as MeshInstance3D
+		if mesh_instance == null or mesh_instance.mesh == null:
+			continue
+		for surface_index: int in range(mesh_instance.mesh.get_surface_count()):
+			var material := (
+				mesh_instance.get_active_material(surface_index) as BaseMaterial3D
+			)
+			if material != null and material.emission_enabled:
+				failures.append("breaker did not disable a wall or floor emission")
+				return
 
 
 func _walls_are_emissive(root_node: Node3D) -> bool:

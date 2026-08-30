@@ -81,6 +81,7 @@ func _make_surface_dimly_emissive(
 			emissive_material.emission_texture = source_material.albedo_texture
 			emissive_material.emission_energy_multiplier = emission_energy
 			mesh_instance.set_surface_override_material(surface_index, emissive_material)
+			mesh_instance.add_to_group(&"power_emissive_surfaces")
 
 
 func _create_elevator_opening(

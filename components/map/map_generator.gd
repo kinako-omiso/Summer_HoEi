@@ -6,6 +6,12 @@ signal map_generated(seed_value: int)
 const ROOM_COUNT := 6
 const ROOM_SCENE_DIRECTORY := "res://components/rooms"
 const MAP_BREAKER_GROUP := &"map_breaker"
+const RANDOM_CANDIDATE_GROUPS := {
+	"desks": &"random_desk_monitor_candidates",
+	"plants": &"random_plant_candidates",
+	"lockers": &"random_locker_candidates",
+	"pillars": &"pillar",
+}
 const GRID_SIZE := 3
 const ROOM_HALF_SIZE := 7.0
 const ROOM_WALL_OFFSET := 6.87
@@ -146,10 +152,12 @@ func _try_build_compact_layout() -> Dictionary:
 	]
 	var column_positions := _grid_axis_positions(column_gaps)
 	var row_positions := _grid_axis_positions(row_gaps)
+	var selected_room_scene_paths := _select_room_scene_paths()
 
 	var room_specs: Array[Dictionary] = []
-	for cell: Vector2i in cells:
-		var scene_path := _room_scene_paths[_rng.randi_range(0, _room_scene_paths.size() - 1)]
+	for room_index: int in range(cells.size()):
+		var cell: Vector2i = cells[room_index]
+		var scene_path := selected_room_scene_paths[room_index]
 		var scene_id := scene_path.get_file().get_basename()
 		room_specs.append({
 			"cell": cell,
@@ -467,12 +475,7 @@ func _instantiate_layout(layout: Dictionary) -> void:
 		var entrances: Array = room_spec["entrances"]
 		var elevator_side: String = room_spec["elevator_side"]
 		_remove_fixed_entrance_obstructions(room, entrances)
-		var candidate_counts := {
-			"desks": _prune_candidate_group(room, &"random_desk_monitor_candidates"),
-			"plants": _prune_candidate_group(room, &"random_plant_candidates"),
-			"lockers": _prune_candidate_group(room, &"random_locker_candidates"),
-			"pillars": _prune_candidate_group(room, &"pillar"),
-		}
+		var candidate_counts := _prune_room_candidates(room)
 		var door_report := _configure_room_walls(room, entrances, elevator_side)
 		var room_has_lights: bool = (
 			room.get_meta("generated_ceiling_variant", "") == "with_light"
@@ -881,6 +884,7 @@ func _make_surface_dimly_emissive(
 			emissive_material.emission_texture = source_material.albedo_texture
 			emissive_material.emission_energy_multiplier = emission_energy
 			mesh_instance.set_surface_override_material(surface_index, emissive_material)
+			mesh_instance.add_to_group(&"power_emissive_surfaces")
 
 
 func _make_room_walls_dimly_emissive(room: Node3D) -> void:
@@ -949,16 +953,51 @@ func _add_start_elevator_light(elevator: Node3D) -> void:
 	elevator.add_child(ceiling_light)
 
 
-func _prune_candidate_group(room: Node, group_name: StringName) -> int:
-	var candidates: Array[Node] = []
-	for child: Node in room.find_children("*", "Node3D", true, false):
-		if child.is_in_group(group_name):
-			candidates.append(child)
-	var keep_count := _rng.randi_range(0, candidates.size())
-	_shuffle_with_rng(candidates)
-	for remove_index: int in range(keep_count, candidates.size()):
-		candidates[remove_index].free()
-	return keep_count
+func _prune_room_candidates(room: Node) -> Dictionary:
+	var candidates_by_type: Dictionary = {}
+	var keep_counts: Dictionary = {}
+	var nonempty_types: Array[String] = []
+	var total_candidate_count := 0
+	var total_keep_count := 0
+	for candidate_type: String in RANDOM_CANDIDATE_GROUPS:
+		var group_name: StringName = RANDOM_CANDIDATE_GROUPS[candidate_type]
+		var candidates: Array[Node] = []
+		for child: Node in room.find_children("*", "Node3D", true, false):
+			if child.is_in_group(group_name):
+				candidates.append(child)
+		candidates_by_type[candidate_type] = candidates
+		var keep_count := _rng.randi_range(0, candidates.size())
+		keep_counts[candidate_type] = keep_count
+		total_candidate_count += candidates.size()
+		total_keep_count += keep_count
+		if not candidates.is_empty():
+			nonempty_types.append(candidate_type)
+
+	if total_candidate_count > 0 and total_keep_count == 0:
+		var selected_type := nonempty_types[_rng.randi_range(0, nonempty_types.size() - 1)]
+		keep_counts[selected_type] = 1
+
+	for candidate_type: String in RANDOM_CANDIDATE_GROUPS:
+		var candidates: Array = candidates_by_type[candidate_type]
+		var keep_count: int = keep_counts[candidate_type]
+		_shuffle_with_rng(candidates)
+		for remove_index: int in range(keep_count, candidates.size()):
+			candidates[remove_index].free()
+	room.set_meta("generated_had_furniture_candidates", total_candidate_count > 0)
+	return keep_counts
+
+
+func _select_room_scene_paths() -> Array[String]:
+	var selected_paths: Array[String] = _room_scene_paths.duplicate()
+	_shuffle_with_rng(selected_paths)
+	if selected_paths.size() > ROOM_COUNT:
+		selected_paths.resize(ROOM_COUNT)
+	while selected_paths.size() < ROOM_COUNT:
+		selected_paths.append(
+			_room_scene_paths[_rng.randi_range(0, _room_scene_paths.size() - 1)]
+		)
+	_shuffle_with_rng(selected_paths)
+	return selected_paths
 
 
 func _find_set(parents: Array[int], value: int) -> int:
