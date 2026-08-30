@@ -19,11 +19,10 @@ agent_max_climb = 0.5
 
 [sub_resource type="Environment" id="Environment_runtime"]
 background_mode = 1
-background_color = Color(0.025, 0.03, 0.04, 1)
-background_energy_multiplier = 0.1
-ambient_light_source = 2
-ambient_light_color = Color(0.7, 0.74, 0.82, 1)
-ambient_light_energy = 0.18
+background_color = Color(0.015, 0.018, 0.025, 1)
+background_energy_multiplier = 0.0
+ambient_light_source = 3
+ambient_light_energy = 0.0
 
 [node name="TempMain" type="Node" unique_id=673077450]
 script = ExtResource("1_main")
