@@ -30,6 +30,7 @@ doors="ドア！！"
 player="プレイヤー"
 elevator_doors="停電時に開閉するエレベーター扉"
 galle="ゴールです"
+power_emissive_surfaces="停電時に自己発光を停止する壁・床"
 
 [gui]
 

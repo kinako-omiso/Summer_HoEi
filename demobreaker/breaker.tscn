@@ -8,7 +8,7 @@
 [sub_resource type="BoxShape3D" id="BoxShape3D_k8684"]
 size = Vector3(0.5046387, 1, 0.23236084)
 
-[node name="BreakerManager" type="Node3D" unique_id=1977523128]
+[node name="BreakerManager" type="Node3D" unique_id=1977523128 groups=["map_breaker"]]
 script = ExtResource("1_k3pt2")
 
 [node name="Breaker" type="StaticBody3D" parent="." unique_id=1162135650]

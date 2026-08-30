@@ -5,11 +5,22 @@ signal map_generated(seed_value: int)
 
 const ROOM_COUNT := 6
 const ROOM_SCENE_DIRECTORY := "res://components/rooms"
+const MAP_BREAKER_GROUP := &"map_breaker"
+const RANDOM_CANDIDATE_GROUPS := {
+	"desks": &"random_desk_monitor_candidates",
+	"plants": &"random_plant_candidates",
+	"lockers": &"random_locker_candidates",
+	"pillars": &"pillar",
+}
 const GRID_SIZE := 3
 const ROOM_HALF_SIZE := 7.0
 const ROOM_WALL_OFFSET := 6.87
 const ROOM_WALL_HEIGHT := 3.15
 const CORRIDOR_SOURCE_LENGTH := 28.0
+const FLOOR_EMISSION_COLOR := Color(0.38, 0.46, 0.56)
+const FLOOR_EMISSION_ENERGY := 0.10
+const WALL_EMISSION_COLOR := Color(0.55, 0.62, 0.72)
+const WALL_EMISSION_ENERGY := 0.16
 const MAX_LAYOUT_ATTEMPTS := 160
 const DOOR_SWING_CLEARANCE := AABB(
 	Vector3(-1.4, -3.2, -0.35),
@@ -51,6 +62,10 @@ const ELEVATOR_ENTRANCE_WALL := preload(
 )
 const ELEVATOR := preload("res://assets/3DModel/elevator.tscn")
 const ELEVATOR_DOOR := preload("res://assets/3DModel/elevator_door.tscn")
+const ELEVATOR_LIGHT_POSITION := Vector3(0.0, 2.45, -2.28)
+const CEILING_LIGHT_ENERGY := 4.0
+const CEILING_LIGHT_RANGE := 10.0
+const CEILING_LIGHT_ATTENUATION := 1.25
 
 @export_range(3.0, 20.0, 0.5) var minimum_corridor_length := 3.0
 @export_range(3.0, 20.0, 0.5) var maximum_corridor_length := 20.0
@@ -137,10 +152,12 @@ func _try_build_compact_layout() -> Dictionary:
 	]
 	var column_positions := _grid_axis_positions(column_gaps)
 	var row_positions := _grid_axis_positions(row_gaps)
+	var selected_room_scene_paths := _select_room_scene_paths()
 
 	var room_specs: Array[Dictionary] = []
-	for cell: Vector2i in cells:
-		var scene_path := _room_scene_paths[_rng.randi_range(0, _room_scene_paths.size() - 1)]
+	for room_index: int in range(cells.size()):
+		var cell: Vector2i = cells[room_index]
+		var scene_path := selected_room_scene_paths[room_index]
 		var scene_id := scene_path.get_file().get_basename()
 		room_specs.append({
 			"cell": cell,
@@ -177,6 +194,8 @@ func _try_build_compact_layout() -> Dictionary:
 			"length": start.distance_to(end),
 			"first_room": first_index,
 			"second_room": second_index,
+			"first_side": first_side,
+			"second_side": second_side,
 			"elevator_side": "",
 			"elevator_role": "",
 		})
@@ -423,8 +442,16 @@ func _instantiate_layout(layout: Dictionary) -> void:
 
 	var corridors: Array = layout["corridors"]
 	var corridor_light_variants := _build_corridor_light_variants(corridors.size())
+	var unlit_corridor_sides_by_room: Dictionary = {}
+	for room_index: int in range(layout["rooms"].size()):
+		unlit_corridor_sides_by_room[room_index] = [] as Array[String]
 	for corridor_index: int in range(corridors.size()):
 		var corridor: Dictionary = corridors[corridor_index]
+		if not corridor_light_variants[corridor_index]:
+			var first_sides: Array = unlit_corridor_sides_by_room[corridor["first_room"]]
+			var second_sides: Array = unlit_corridor_sides_by_room[corridor["second_room"]]
+			first_sides.append(corridor["first_side"])
+			second_sides.append(corridor["second_side"])
 		_add_corridor_edge(
 			corridors_root,
 			corridor["from"],
@@ -448,13 +475,23 @@ func _instantiate_layout(layout: Dictionary) -> void:
 		var entrances: Array = room_spec["entrances"]
 		var elevator_side: String = room_spec["elevator_side"]
 		_remove_fixed_entrance_obstructions(room, entrances)
-		var candidate_counts := {
-			"desks": _prune_candidate_group(room, &"random_desk_monitor_candidates"),
-			"plants": _prune_candidate_group(room, &"random_plant_candidates"),
-			"lockers": _prune_candidate_group(room, &"random_locker_candidates"),
-			"pillars": _prune_candidate_group(room, &"pillar"),
-		}
+		var candidate_counts := _prune_room_candidates(room)
 		var door_report := _configure_room_walls(room, entrances, elevator_side)
+		var room_has_lights: bool = (
+			room.get_meta("generated_ceiling_variant", "") == "with_light"
+		)
+		if not room_has_lights:
+			_make_room_walls_dimly_emissive(room)
+		else:
+			_make_room_entrance_walls_dimly_emissive(
+				room,
+				unlit_corridor_sides_by_room[room_index],
+			)
+		room.set_meta("wall_is_emissive", not room_has_lights)
+		room.set_meta(
+			"generated_unlit_corridor_sides",
+			unlit_corridor_sides_by_room[room_index].duplicate(),
+		)
 		room.set_meta("generated_room_type", room_spec["type"])
 		room.set_meta("generated_room_scene", room_spec["scene_path"])
 		room.set_meta("generated_entrance_count", entrances.size())
@@ -465,6 +502,7 @@ func _instantiate_layout(layout: Dictionary) -> void:
 		room.set_meta("generated_obstructed_door_sides", door_report["obstructed"])
 		room_instances.append(room)
 
+	_keep_one_map_breaker(room_instances)
 	_ensure_at_least_one_generated_door(room_instances, room_specs)
 	generated_door_count = _count_generated_doors(room_instances)
 
@@ -588,6 +626,21 @@ func _remove_fixed_entrance_obstructions(room: Node3D, entrances: Array) -> void
 	_relocate_breaker(room, entrances)
 
 
+func _keep_one_map_breaker(room_instances: Array[Node3D]) -> void:
+	var breakers: Array[Node3D] = []
+	for room: Node3D in room_instances:
+		var breaker := _find_room_breaker(room)
+		if breaker != null:
+			breakers.append(breaker)
+	if breakers.size() <= 1:
+		return
+
+	var kept_breaker_index := _rng.randi_range(0, breakers.size() - 1)
+	for breaker_index: int in range(breakers.size()):
+		if breaker_index != kept_breaker_index:
+			breakers[breaker_index].free()
+
+
 func _remove_door_from_entrance(wall: Node3D) -> void:
 	var interactive_door := wall.get_node_or_null("InteractiveDoor")
 	if interactive_door != null:
@@ -682,7 +735,7 @@ func _apply_wall_transform(wall: Node3D, side: String) -> void:
 
 
 func _relocate_breaker(room: Node3D, entrances: Array) -> void:
-	var breaker := room.get_node_or_null("Breaker") as Node3D
+	var breaker := _find_room_breaker(room)
 	if breaker == null:
 		return
 	var original_side := _side_from_room_position(breaker.position)
@@ -707,6 +760,13 @@ func _relocate_breaker(room: Node3D, entrances: Array) -> void:
 		SIDE_WEST:
 			breaker.position = Vector3(-6.62, preserved_y, 4.8)
 	breaker.rotation.y = wrapf(breaker.rotation.y + yaw_delta, -PI, PI)
+
+
+func _find_room_breaker(room: Node3D) -> Node3D:
+	for child: Node in room.get_children():
+		if child is Node3D and child.is_in_group(MAP_BREAKER_GROUP):
+			return child as Node3D
+	return null
 
 
 func _side_from_room_position(position: Vector3) -> String:
@@ -790,7 +850,64 @@ func _randomize_room_ceiling(room: Node3D) -> void:
 	ceiling.name = "Ceiling"
 	ceiling.transform = ceiling_transform
 	structure.add_child(ceiling)
+	if not ceiling_has_lights:
+		var floor := structure.get_node_or_null("Floor")
+		if floor != null:
+			_make_surface_dimly_emissive(
+				floor,
+				FLOOR_EMISSION_COLOR,
+				FLOOR_EMISSION_ENERGY,
+			)
 	room.set_meta("generated_ceiling_variant", "with_light" if ceiling_has_lights else "normal")
+	room.set_meta("floor_is_emissive", not ceiling_has_lights)
+
+
+func _make_surface_dimly_emissive(
+	surface_root: Node,
+	emission_color: Color,
+	emission_energy: float,
+) -> void:
+	for mesh_instance: MeshInstance3D in surface_root.find_children(
+		"*", "MeshInstance3D", true, false
+	):
+		if mesh_instance.mesh == null:
+			continue
+		for surface_index: int in range(mesh_instance.mesh.get_surface_count()):
+			var source_material := (
+				mesh_instance.get_active_material(surface_index) as BaseMaterial3D
+			)
+			if source_material == null:
+				continue
+			var emissive_material := source_material.duplicate() as BaseMaterial3D
+			emissive_material.emission_enabled = true
+			emissive_material.emission = emission_color
+			emissive_material.emission_texture = source_material.albedo_texture
+			emissive_material.emission_energy_multiplier = emission_energy
+			mesh_instance.set_surface_override_material(surface_index, emissive_material)
+			mesh_instance.add_to_group(&"power_emissive_surfaces")
+
+
+func _make_room_walls_dimly_emissive(room: Node3D) -> void:
+	var structure := room.get_node_or_null("Structure")
+	if structure == null:
+		return
+	for wall: Node in structure.find_children("Wall*", "StaticBody3D", true, false):
+		_make_surface_dimly_emissive(wall, WALL_EMISSION_COLOR, WALL_EMISSION_ENERGY)
+
+
+func _make_room_entrance_walls_dimly_emissive(
+	room: Node3D,
+	entrance_sides: Array,
+) -> void:
+	var structure := room.get_node_or_null("Structure")
+	if structure == null:
+		return
+	for side: String in entrance_sides:
+		var entrance := structure.get_node_or_null("Entrance%s" % side.capitalize())
+		if entrance == null:
+			continue
+		for wall: Node in entrance.find_children("Wall*", "StaticBody3D", true, false):
+			_make_surface_dimly_emissive(wall, WALL_EMISSION_COLOR, WALL_EMISSION_ENERGY)
 
 
 func _add_elevator_terminal(
@@ -811,6 +928,8 @@ func _add_elevator_terminal(
 	# Room floors top out at Y=0.15. Raising the enclosure by 0.15 aligns
 	# its floor collision with the room and removes the doorway step.
 	elevator.position = Vector3(0.0, 3.15, 4.28)
+	if role == "start":
+		_add_start_elevator_light(elevator)
 
 	var door := ELEVATOR_DOOR.instantiate() as Node3D
 	door.name = "ElevatorDoor"
@@ -822,16 +941,63 @@ func _add_elevator_terminal(
 	parent.add_child(door)
 
 
-func _prune_candidate_group(room: Node, group_name: StringName) -> int:
-	var candidates: Array[Node] = []
-	for child: Node in room.find_children("*", "Node3D", true, false):
-		if child.is_in_group(group_name):
-			candidates.append(child)
-	var keep_count := _rng.randi_range(0, candidates.size())
-	_shuffle_with_rng(candidates)
-	for remove_index: int in range(keep_count, candidates.size()):
-		candidates[remove_index].free()
-	return keep_count
+func _add_start_elevator_light(elevator: Node3D) -> void:
+	var ceiling_light := OmniLight3D.new()
+	ceiling_light.name = "CeilingLight"
+	ceiling_light.position = ELEVATOR_LIGHT_POSITION
+	ceiling_light.layers = 4
+	ceiling_light.light_energy = CEILING_LIGHT_ENERGY
+	ceiling_light.omni_range = CEILING_LIGHT_RANGE
+	ceiling_light.omni_attenuation = CEILING_LIGHT_ATTENUATION
+	ceiling_light.add_to_group(&"lights")
+	elevator.add_child(ceiling_light)
+
+
+func _prune_room_candidates(room: Node) -> Dictionary:
+	var candidates_by_type: Dictionary = {}
+	var keep_counts: Dictionary = {}
+	var nonempty_types: Array[String] = []
+	var total_candidate_count := 0
+	var total_keep_count := 0
+	for candidate_type: String in RANDOM_CANDIDATE_GROUPS:
+		var group_name: StringName = RANDOM_CANDIDATE_GROUPS[candidate_type]
+		var candidates: Array[Node] = []
+		for child: Node in room.find_children("*", "Node3D", true, false):
+			if child.is_in_group(group_name):
+				candidates.append(child)
+		candidates_by_type[candidate_type] = candidates
+		var keep_count := _rng.randi_range(0, candidates.size())
+		keep_counts[candidate_type] = keep_count
+		total_candidate_count += candidates.size()
+		total_keep_count += keep_count
+		if not candidates.is_empty():
+			nonempty_types.append(candidate_type)
+
+	if total_candidate_count > 0 and total_keep_count == 0:
+		var selected_type := nonempty_types[_rng.randi_range(0, nonempty_types.size() - 1)]
+		keep_counts[selected_type] = 1
+
+	for candidate_type: String in RANDOM_CANDIDATE_GROUPS:
+		var candidates: Array = candidates_by_type[candidate_type]
+		var keep_count: int = keep_counts[candidate_type]
+		_shuffle_with_rng(candidates)
+		for remove_index: int in range(keep_count, candidates.size()):
+			candidates[remove_index].free()
+	room.set_meta("generated_had_furniture_candidates", total_candidate_count > 0)
+	return keep_counts
+
+
+func _select_room_scene_paths() -> Array[String]:
+	var selected_paths: Array[String] = _room_scene_paths.duplicate()
+	_shuffle_with_rng(selected_paths)
+	if selected_paths.size() > ROOM_COUNT:
+		selected_paths.resize(ROOM_COUNT)
+	while selected_paths.size() < ROOM_COUNT:
+		selected_paths.append(
+			_room_scene_paths[_rng.randi_range(0, _room_scene_paths.size() - 1)]
+		)
+	_shuffle_with_rng(selected_paths)
+	return selected_paths
 
 
 func _find_set(parents: Array[int], value: int) -> int:
