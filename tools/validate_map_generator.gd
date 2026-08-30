@@ -5,6 +5,7 @@ const GENERATOR_SCENE := preload("res://components/map/map_generator.tscn")
 const ROOM_TEMPLATE := preload("res://components/rooms/room_template.tscn")
 const ROOM_A := preload("res://components/rooms/room_a_office.tscn")
 const ROOM_B := preload("res://components/rooms/room_b_storage.tscn")
+const ROOM_C := preload("res://components/rooms/room_c_bigpillar.tscn")
 const CENTERED_DOOR_WALL := preload("res://components/map/centered_wall_with_door.tscn")
 const ELEVATOR_ENTRANCE_WALL := preload(
 	"res://components/map/centered_wall_with_elevator_door.tscn"
@@ -222,12 +223,24 @@ func _validate_elevator_door_fit(generator: Node, failures: Array[String]) -> vo
 
 
 func _validate_authored_breaker_transforms(generator: Node, failures: Array[String]) -> void:
-	for room_scene: PackedScene in [ROOM_A, ROOM_B]:
+	for room_scene: PackedScene in [ROOM_A, ROOM_B, ROOM_C]:
 		var room := room_scene.instantiate() as Node3D
 		generator.add_child(room)
-		var breaker := room.get_node("Breaker") as Node3D
+		var breaker: Node3D = generator.call("_find_room_breaker", room)
 		var authored_transform := breaker.transform
 		var original_side: String = generator.call("_side_from_room_position", breaker.position)
+		var authored_yaw := breaker.rotation.y
+		var canonical_yaw: float = generator.call("_canonical_breaker_yaw", original_side)
+		var wall_mounted: bool = breaker.get_meta("wall_mounted", true)
+		var radial_direction := Vector3(breaker.position.x, 0.0, breaker.position.z).normalized()
+		# The breaker bar and interaction area are on the local -Z side.
+		var mounting_direction := (-breaker.basis.z).normalized().dot(radial_direction)
+		if wall_mounted and absf(angle_difference(authored_yaw, canonical_yaw)) > 0.001:
+			failures.append("%s authored breaker faces away from the room" % room.name)
+		elif wall_mounted and mounting_direction >= 0.0:
+			failures.append("%s breaker bar faces away from the player" % room.name)
+		elif not wall_mounted and mounting_direction <= 0.0:
+			failures.append("%s pillar breaker faces into its mounting surface" % room.name)
 		var non_conflicting_side := "north" if original_side != "north" else "east"
 		generator.call("_relocate_breaker", room, [non_conflicting_side])
 		if not breaker.transform.is_equal_approx(authored_transform):
@@ -236,7 +249,7 @@ func _validate_authored_breaker_transforms(generator: Node, failures: Array[Stri
 
 		var moved_room := room_scene.instantiate() as Node3D
 		generator.add_child(moved_room)
-		var moved_breaker := moved_room.get_node("Breaker") as Node3D
+		var moved_breaker: Node3D = generator.call("_find_room_breaker", moved_room)
 		var original_yaw := moved_breaker.rotation.y
 		var original_height := moved_breaker.position.y
 		var original_canonical_yaw: float = generator.call("_canonical_breaker_yaw", original_side)
@@ -444,7 +457,7 @@ func _validate_instantiated_map(generator: Node, failures: Array[String]) -> voi
 			var entrance_nodes := room.find_children("Entrance*", "Node3D", true, false)
 			if entrance_nodes.size() != entrance_count:
 				failures.append("%s entrance node count does not match metadata" % room.name)
-			var room_has_lights := room.get_meta("generated_ceiling_variant", "") == "with_light"
+			var room_has_lights: bool = room.get_meta("generated_ceiling_variant", "") == "with_light"
 			if room.get_meta("floor_is_emissive", false) == room_has_lights:
 				failures.append("%s floor emission does not match its ceiling variant" % room.name)
 			elif not room_has_lights and not _surface_is_emissive(
@@ -497,7 +510,7 @@ func _validate_instantiated_map(generator: Node, failures: Array[String]) -> voi
 				failures.append("%s floor collision leaves a navigation seam" % corridor.name)
 			if not _corridor_walls_fit_between_rooms(corridor, corridor_length):
 				failures.append("%s visible walls extend into a room" % corridor.name)
-			var corridor_has_lights := (
+			var corridor_has_lights: bool = (
 				corridor.get_meta("generated_ceiling_variant", "") == "with_light"
 			)
 			if corridor.get_meta("wall_is_emissive", false) == corridor_has_lights:

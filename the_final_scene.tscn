@@ -1,0 +1,41 @@
+[gd_scene format=3 uid="uid://d1su65qgnoc73"]
+
+[ext_resource type="Script" uid="uid://dtljdaeyw0vt4" path="res://the_final_scene.gd" id="1_gcb68"]
+[ext_resource type="Texture2D" uid="uid://72tqruxse27r" path="res://assets/title.png" id="1_k7fso"]
+
+[node name="TheFinalScene" type="Control" unique_id=850063227]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_gcb68")
+
+[node name="BlackBackground" type="ColorRect" parent="." unique_id=1508752884]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="Background" type="ColorRect" parent="." unique_id=1839037895]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="TextureRect" type="TextureRect" parent="." unique_id=464026125]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("1_k7fso")
+expand_mode = 1
