@@ -420,6 +420,13 @@ func _validate_instantiated_map(generator: Node, failures: Array[String]) -> voi
 			var entrance_nodes := room.find_children("Entrance*", "Node3D", true, false)
 			if entrance_nodes.size() != entrance_count:
 				failures.append("%s entrance node count does not match metadata" % room.name)
+		var map_breakers := rooms_root.find_children("*", "Node3D", true, false).filter(
+			func(node: Node) -> bool: return node.is_in_group(&"map_breaker")
+		)
+		if map_breakers.size() != 1:
+			failures.append(
+				"instantiated map must contain one breaker, found %d" % map_breakers.size()
+			)
 	if corridors_root == null or corridors_root.get_child_count() < ROOM_COUNT - 1:
 		failures.append("instantiated map has too few room corridors")
 	else:

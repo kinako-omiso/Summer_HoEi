@@ -5,6 +5,7 @@ signal map_generated(seed_value: int)
 
 const ROOM_COUNT := 6
 const ROOM_SCENE_DIRECTORY := "res://components/rooms"
+const MAP_BREAKER_GROUP := &"map_breaker"
 const GRID_SIZE := 3
 const ROOM_HALF_SIZE := 7.0
 const ROOM_WALL_OFFSET := 6.87
@@ -465,6 +466,7 @@ func _instantiate_layout(layout: Dictionary) -> void:
 		room.set_meta("generated_obstructed_door_sides", door_report["obstructed"])
 		room_instances.append(room)
 
+	_keep_one_map_breaker(room_instances)
 	_ensure_at_least_one_generated_door(room_instances, room_specs)
 	generated_door_count = _count_generated_doors(room_instances)
 
@@ -588,6 +590,21 @@ func _remove_fixed_entrance_obstructions(room: Node3D, entrances: Array) -> void
 	_relocate_breaker(room, entrances)
 
 
+func _keep_one_map_breaker(room_instances: Array[Node3D]) -> void:
+	var breakers: Array[Node3D] = []
+	for room: Node3D in room_instances:
+		var breaker := _find_room_breaker(room)
+		if breaker != null:
+			breakers.append(breaker)
+	if breakers.size() <= 1:
+		return
+
+	var kept_breaker_index := _rng.randi_range(0, breakers.size() - 1)
+	for breaker_index: int in range(breakers.size()):
+		if breaker_index != kept_breaker_index:
+			breakers[breaker_index].free()
+
+
 func _remove_door_from_entrance(wall: Node3D) -> void:
 	var interactive_door := wall.get_node_or_null("InteractiveDoor")
 	if interactive_door != null:
@@ -682,7 +699,7 @@ func _apply_wall_transform(wall: Node3D, side: String) -> void:
 
 
 func _relocate_breaker(room: Node3D, entrances: Array) -> void:
-	var breaker := room.get_node_or_null("Breaker") as Node3D
+	var breaker := _find_room_breaker(room)
 	if breaker == null:
 		return
 	var original_side := _side_from_room_position(breaker.position)
@@ -707,6 +724,13 @@ func _relocate_breaker(room: Node3D, entrances: Array) -> void:
 		SIDE_WEST:
 			breaker.position = Vector3(-6.62, preserved_y, 4.8)
 	breaker.rotation.y = wrapf(breaker.rotation.y + yaw_delta, -PI, PI)
+
+
+func _find_room_breaker(room: Node3D) -> Node3D:
+	for child: Node in room.get_children():
+		if child is Node3D and child.is_in_group(MAP_BREAKER_GROUP):
+			return child as Node3D
+	return null
 
 
 func _side_from_room_position(position: Vector3) -> String:
