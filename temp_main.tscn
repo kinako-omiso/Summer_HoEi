@@ -67,6 +67,19 @@ expand = true
 
 [node name="ResultUserInterface" parent="." unique_id=1197500075 instance=ExtResource("5_xcf3y")]
 
+[node name="EndingFadeLayer" type="CanvasLayer" parent="."]
+layer = 100
+
+[node name="EndingFade" type="ColorRect" parent="EndingFadeLayer"]
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+color = Color(0, 0, 0, 0)
+
 [connection signal="hit" from="Player" to="." method="_on_player_hit"]
 [connection signal="survive" from="Player" to="." method="_on_player_survive"]
 [connection signal="finished" from="BGMPlayer" to="." method="_on_bgm_player_finished"]

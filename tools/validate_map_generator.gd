@@ -562,8 +562,19 @@ func _validate_instantiated_map(generator: Node, failures: Array[String]) -> voi
 				or not is_equal_approx(elevator_light.omni_attenuation, 1.25)
 			):
 				failures.append("start elevator light does not match ceiling lights")
-		elif elevator_light != null:
-			failures.append("goal elevator must not contain the start light")
+		else:
+			if elevator_light == null:
+				failures.append("goal elevator ceiling light is missing")
+			elif not elevator_light.position.is_equal_approx(Vector3(0.0, 2.45, -2.28)):
+				failures.append("goal elevator light is not below its ceiling fixture")
+			elif not elevator_light.is_in_group("goal_elevator_lights"):
+				failures.append("goal elevator ceiling light is not switchable")
+			elif (
+				not is_zero_approx(elevator_light.light_energy)
+				or not is_equal_approx(elevator_light.omni_range, 10.0)
+				or not is_equal_approx(elevator_light.omni_attenuation, 1.25)
+			):
+				failures.append("goal elevator light is not initially off")
 		var completion_area := elevator.get_node_or_null("GallePost") as Area3D
 		if completion_area == null:
 			failures.append("%s elevator completion area is missing" % expected_role)
@@ -600,6 +611,13 @@ func _validate_breaker_disables_emissive_surfaces(
 		failures.append("cannot validate emissive power-off without one breaker")
 		return
 	breakers[0].emit_signal("lights_out")
+	var goal_elevator_lights := generator.get_tree().get_nodes_in_group(
+		"goal_elevator_lights"
+	)
+	if goal_elevator_lights.size() != 1:
+		failures.append("generated map must have one goal elevator light")
+	elif not is_equal_approx(goal_elevator_lights[0].light_energy, 4.0):
+		failures.append("breaker did not turn on the goal elevator light")
 	for node: Node in emissive_surfaces:
 		var mesh_instance := node as MeshInstance3D
 		if mesh_instance == null or mesh_instance.mesh == null:

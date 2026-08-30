@@ -930,8 +930,7 @@ func _add_elevator_terminal(
 	# Room floors top out at Y=0.15. Raising the enclosure by 0.15 aligns
 	# its floor collision with the room and removes the doorway step.
 	elevator.position = Vector3(0.0, 3.15, 4.28)
-	if role == "start":
-		_add_start_elevator_light(elevator)
+	_add_elevator_light(elevator, role)
 
 	var door := ELEVATOR_DOOR.instantiate() as Node3D
 	door.name = "ElevatorDoor"
@@ -943,15 +942,17 @@ func _add_elevator_terminal(
 	parent.add_child(door)
 
 
-func _add_start_elevator_light(elevator: Node3D) -> void:
+func _add_elevator_light(elevator: Node3D, role: String) -> void:
 	var ceiling_light := OmniLight3D.new()
 	ceiling_light.name = "CeilingLight"
 	ceiling_light.position = ELEVATOR_LIGHT_POSITION
 	ceiling_light.layers = 4
-	ceiling_light.light_energy = CEILING_LIGHT_ENERGY
+	ceiling_light.light_energy = CEILING_LIGHT_ENERGY if role == "start" else 0.0
 	ceiling_light.omni_range = CEILING_LIGHT_RANGE
 	ceiling_light.omni_attenuation = CEILING_LIGHT_ATTENUATION
-	ceiling_light.add_to_group(&"lights")
+	ceiling_light.add_to_group(
+		"lights" if role == "start" else "goal_elevator_lights"
+	)
 	elevator.add_child(ceiling_light)
 
 

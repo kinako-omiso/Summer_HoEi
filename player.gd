@@ -67,10 +67,9 @@ func _unhandled_input(event):
 				global_position
 			)
 
-# シグナル発信とプレイヤーの破棄
+# シグナル発信（捕獲後の停止処理はメインシーン側で行う）
 func die():
 	hit.emit()
-	queue_free()
 
 func _success():
 	await get_tree().create_timer(3.0).timeout
