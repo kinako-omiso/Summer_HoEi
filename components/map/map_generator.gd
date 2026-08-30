@@ -1029,9 +1029,17 @@ func _refresh_room_scene_paths() -> bool:
 	var filenames := directory.get_files()
 	filenames.sort()
 	for filename: String in filenames:
-		if not _is_room_scene_filename(filename):
+		# Exported PCKs expose remapped scenes as `*.tscn.remap`. Load them
+		# through their original `res://...tscn` path so ResourceLoader applies
+		# the remap automatically.
+		var resource_filename := (
+			filename.trim_suffix(".remap")
+			if filename.ends_with(".remap")
+			else filename
+		)
+		if not _is_room_scene_filename(resource_filename):
 			continue
-		var scene_path := "%s/%s" % [ROOM_SCENE_DIRECTORY, filename]
+		var scene_path := "%s/%s" % [ROOM_SCENE_DIRECTORY, resource_filename]
 		# Reload the saved scene and all of its external dependencies for every
 		# map generation. This bypasses stale ResourceLoader cache entries during
 		# an editor play session without requiring a project restart.

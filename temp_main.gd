@@ -21,11 +21,13 @@ signal runtime_map_ready(seed_value: int)
 @onready var announcement_1_player: AudioStreamPlayer = $Announcement1Player
 @onready var announcement_2_player: AudioStreamPlayer = $Announcement2Player
 @onready var player_camera: Camera3D = $Player/PlayerCamera
+@onready var capture_movie_player: VideoStreamPlayer = $CaptureMoviePlayer
 
 var camera_change := 1
 var is_runtime_map_ready := false
 var _breaker_announcement_played := false
 var _breaker_announcement_pending := false
+var _capture_sequence_playing := false
 
 
 func _ready() -> void:
@@ -242,6 +244,8 @@ func _get_breaker_view_target(breaker: Node3D) -> Vector3:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if _capture_sequence_playing:
+		return
 	if event.is_action_pressed("pause") and not event.is_echo():
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 		if result_ui:
@@ -249,8 +253,29 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _on_player_hit() -> void:
+	if _capture_sequence_playing:
+		return
+	_capture_sequence_playing = true
 	print("you die")
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	player.process_mode = Node.PROCESS_MODE_DISABLED
+	monster.process_mode = Node.PROCESS_MODE_DISABLED
+	bgm_player.stop()
+	announcement_1_player.stop()
+	announcement_2_player.stop()
+	if capture_movie_player.stream != null:
+		capture_movie_player.show()
+		capture_movie_player.play()
+		return
+	_show_game_over_after_capture_movie()
+
+
+func _on_capture_movie_finished() -> void:
+	capture_movie_player.hide()
+	_show_game_over_after_capture_movie()
+
+
+func _show_game_over_after_capture_movie() -> void:
 	if result_ui:
 		result_ui.show_game_over()
 
