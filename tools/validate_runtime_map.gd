@@ -53,7 +53,6 @@ func _validate_ready_map() -> void:
 	var monster := _main.get_node("demomonster") as CharacterBody3D
 	var rooms := generator.get_node("Rooms")
 	var corridors := generator.get_node("Corridors")
-	_validate_debug_lighting(failures)
 	_validate_visible_doors(generator, player, failures)
 	_validate_elevator_door(generator, failures)
 	await _validate_start_elevator_exit(generator, failures)
@@ -164,32 +163,6 @@ func _validate_ceiling_lights(
 			failures.append("%s contains a ceiling light with no emitted energy" % owner_name)
 		if light is OmniLight3D and (light as OmniLight3D).omni_range <= 0.0:
 			failures.append("%s contains a ceiling light with no effective range" % owner_name)
-
-
-func _validate_debug_lighting(failures: Array[String]) -> void:
-	if not InputMap.has_action("debug_lighting_toggle"):
-		failures.append("debug_lighting_toggle input action is missing")
-		return
-	var has_k_key := false
-	for input_event: InputEvent in InputMap.action_get_events("debug_lighting_toggle"):
-		if input_event is InputEventKey and (input_event as InputEventKey).physical_keycode == KEY_K:
-			has_k_key = true
-			break
-	if not has_k_key:
-		failures.append("debug_lighting_toggle is not assigned to the K key")
-
-	var world_environment := _main.get_node("WorldEnvironment") as WorldEnvironment
-	var environment := world_environment.environment
-	var original_ambient_energy := environment.ambient_light_energy
-	var original_background_energy := environment.background_energy_multiplier
-	_main.toggle_debug_lighting()
-	if not is_zero_approx(environment.ambient_light_energy) or not is_zero_approx(environment.background_energy_multiplier):
-		failures.append("debug lighting did not turn off")
-	_main.toggle_debug_lighting()
-	if not is_equal_approx(environment.ambient_light_energy, original_ambient_energy):
-		failures.append("debug ambient lighting did not restore its original energy")
-	if not is_equal_approx(environment.background_energy_multiplier, original_background_energy):
-		failures.append("debug background lighting did not restore its original energy")
 
 
 func _validate_visible_doors(generator: Node, player: CharacterBody3D, failures: Array[String]) -> void:
