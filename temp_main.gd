@@ -3,6 +3,9 @@ extends Node
 
 signal runtime_map_ready(seed_value: int)
 
+@export_category("Game Rules")
+@export_range(1, 10, 1) var building_floors_number: int = 3
+
 @export_category("Audio")
 @export_range(-80.0, 12.0, 0.5, "suffix:dB") var bgm_volume_db := 6.0
 @export_range(-80.0, 12.0, 0.5, "suffix:dB") var announcement_bgm_volume_db := -40.0
@@ -31,7 +34,13 @@ var _capture_sequence_playing := false
 
 
 func _ready() -> void:
-	_configure_audio_output()
+	if GameManager.retry_count >= building_floors_number:
+		get_tree().change_scene_to_file("res://assets/Video/event_movie.tscn")
+		return
+		
+	GameManager.floors_number = building_floors_number
+	_start_bgm()
+  _configure_audio_output()
 	player.process_mode = Node.PROCESS_MODE_DISABLED
 	monster.process_mode = Node.PROCESS_MODE_DISABLED
 	NavigationServer3D.map_set_use_async_iterations(
@@ -84,6 +93,8 @@ func _ready() -> void:
 			navigation_region.navigation_mesh.get_polygon_count(),
 		]
 	)
+
+	print("現在のリトライ回数:", GameManager.check_retry_count())
 
 
 func _start_bgm() -> void:
@@ -168,7 +179,6 @@ func _configure_audio_output() -> void:
 			"Audio output device '%s' is unavailable; using Default."
 			% requested_device
 		)
-
 
 func _on_bgm_player_finished() -> void:
 	# Fallback for stream formats that do not expose an internal loop setting.

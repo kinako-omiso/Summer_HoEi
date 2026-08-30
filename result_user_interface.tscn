@@ -41,11 +41,13 @@ layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 0.81960785, 1)
 theme_override_font_sizes/font_size = 180
 text = "t"
+horizontal_alignment = 1
 
 [node name="ScoreLabel" type="Label" parent="Control/VBoxContainer" unique_id=1917575868]
 layout_mode = 2
 theme_override_font_sizes/font_size = 100
 text = " "
+horizontal_alignment = 1
 
 [node name="BackButton" type="Button" parent="Control/VBoxContainer" unique_id=1472577783]
 process_mode = 3
