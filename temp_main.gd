@@ -4,6 +4,8 @@ extends Node
 signal runtime_map_ready(seed_value: int)
 
 const CAPTURE_MOVIE_UI_TIME := 3.71
+const ENDING_FADE_DURATION := 2.0
+const ENDING_MOVIE_SCENE := "res://assets/Video/event_movie.tscn"
 
 @export_category("Game Rules")
 @export_range(1, 10, 1) var building_floors_number: int = 3
@@ -27,6 +29,7 @@ const CAPTURE_MOVIE_UI_TIME := 3.71
 @onready var announcement_2_player: AudioStreamPlayer = $Announcement2Player
 @onready var player_camera: Camera3D = $Player/PlayerCamera
 @onready var capture_movie_player: VideoStreamPlayer = $CaptureMoviePlayer
+@onready var ending_fade: ColorRect = $EndingFadeLayer/EndingFade
 
 var camera_change := 1
 var is_runtime_map_ready := false
@@ -34,6 +37,7 @@ var _breaker_announcement_played := false
 var _breaker_announcement_pending := false
 var _capture_sequence_playing := false
 var _game_over_ui_shown := false
+var _ending_transition_playing := false
 
 
 func _ready() -> void:
@@ -194,7 +198,7 @@ func _exit_tree() -> void:
 
 
 func _process(_delta: float) -> void:
-	if not is_runtime_map_ready or _capture_sequence_playing:
+	if not is_runtime_map_ready or _capture_sequence_playing or _ending_transition_playing:
 		return
 	_check_breaker_in_center_view()
 	if camera_change == -1 and Input.is_action_just_pressed("debug_camera_change"):
@@ -257,7 +261,7 @@ func _get_breaker_view_target(breaker: Node3D) -> Vector3:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if _capture_sequence_playing:
+	if _capture_sequence_playing or _ending_transition_playing:
 		return
 	if event.is_action_pressed("pause") and not event.is_echo():
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
@@ -266,7 +270,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _on_player_hit() -> void:
-	if _capture_sequence_playing:
+	if _capture_sequence_playing or _ending_transition_playing:
 		return
 	_capture_sequence_playing = true
 	print("you die")
@@ -308,5 +312,29 @@ func _show_game_over_after_capture_movie() -> void:
 func _on_player_survive() -> void:
 	print("success")
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	if _is_first_floor():
+		_play_ending_transition()
+		return
 	if result_ui:
 			result_ui.show_game_clear()
+
+func _is_first_floor() -> bool:
+	return GameManager.check_retry_count() >= building_floors_number - 1
+
+
+func _play_ending_transition() -> void:
+	if _ending_transition_playing:
+		return
+	_ending_transition_playing = true
+	player.process_mode = Node.PROCESS_MODE_DISABLED
+	monster.process_mode = Node.PROCESS_MODE_DISABLED
+	bgm_player.stop()
+	announcement_1_player.stop()
+	announcement_2_player.stop()
+	ending_fade.color.a = 0.0
+	ending_fade.show()
+	var tween := create_tween()
+	tween.tween_property(ending_fade, "color:a", 1.0, ENDING_FADE_DURATION)
+	await tween.finished
+	GameManager.reset_retry_count()
+	get_tree().change_scene_to_file(ENDING_MOVIE_SCENE)
