@@ -738,6 +738,8 @@ func _relocate_breaker(room: Node3D, entrances: Array) -> void:
 	var breaker := _find_room_breaker(room)
 	if breaker == null:
 		return
+	if not breaker.get_meta("wall_mounted", true):
+		return
 	var original_side := _side_from_room_position(breaker.position)
 	# Preserve the room author's complete Transform when its mounting wall is
 	# still solid. Previously every generated room overwrote the authored yaw.
@@ -778,12 +780,12 @@ func _side_from_room_position(position: Vector3) -> String:
 func _canonical_breaker_yaw(side: String) -> float:
 	match side:
 		SIDE_EAST:
-			return -PI * 0.5
-		SIDE_SOUTH:
-			return PI
-		SIDE_WEST:
 			return PI * 0.5
-	return 0.0
+		SIDE_SOUTH:
+			return 0.0
+		SIDE_WEST:
+			return -PI * 0.5
+	return PI
 
 
 func _build_corridor_light_variants(corridor_count: int) -> Array[bool]:
