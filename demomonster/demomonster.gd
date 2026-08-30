@@ -80,6 +80,10 @@ var interaction_path_update_pending := false
 # Playerを最後に視認・インタラクション検知してからの時間
 var forced_detection_timer := 0.0
 
+func _ready():
+	forced_detection_timer = forced_detection_time - 3
+
+
 
 # ============================================================
 # メイン処理
