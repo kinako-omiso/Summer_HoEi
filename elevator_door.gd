@@ -1,6 +1,9 @@
 extends Node3D
 
 
+signal player_left_start_elevator
+
+
 @export_range(0.5, 3.0, 0.05) var slide_distance := 1.4
 @export_range(0.05, 5.0, 0.05) var animation_duration := 0.6
 @export_flags_3d_render var render_layers: int = 4
@@ -17,6 +20,7 @@ var _left_closed_position := Vector3.ZERO
 var _right_closed_position := Vector3.ZERO
 var _movement_tween: Tween
 var _nearby_players: Dictionary = {}
+var _start_exit_reported := false
 
 
 func _ready() -> void:
@@ -47,6 +51,13 @@ func _on_proximity_body_exited(body: Node3D) -> void:
 	if body.is_in_group(&"player"):
 		_nearby_players.erase(body.get_instance_id())
 		_update_door_state()
+		if (
+			is_start_door
+			and not _start_exit_reported
+			and to_local(body.global_position).z < 0.0
+		):
+			_start_exit_reported = true
+			player_left_start_elevator.emit()
 
 
 func _update_door_state() -> void:
