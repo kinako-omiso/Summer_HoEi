@@ -40,7 +40,7 @@ func _ready() -> void:
 		
 	GameManager.floors_number = building_floors_number
 	_start_bgm()
-  _configure_audio_output()
+	_configure_audio_output()
 	player.process_mode = Node.PROCESS_MODE_DISABLED
 	monster.process_mode = Node.PROCESS_MODE_DISABLED
 	NavigationServer3D.map_set_use_async_iterations(
