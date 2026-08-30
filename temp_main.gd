@@ -129,6 +129,10 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("debug_lighting_toggle") and not event.is_echo():
 		toggle_debug_lighting()
 		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("pause") and not event.is_echo():
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		if result_ui:
+			result_ui.show_pause_menu()
 
 
 func toggle_debug_lighting() -> void:
