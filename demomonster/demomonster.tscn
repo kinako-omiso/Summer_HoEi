@@ -34,6 +34,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.6012452, 2.802894)
 
 [node name="AudioStreamPlayer3D" type="AudioStreamPlayer3D" parent="." unique_id=1352193895]
 stream = ExtResource("3_lltaq")
+bus = &"SFX"
 attenuation_model = 1
 volume_db = 30.0
 unit_size = 5.0
