@@ -1,0 +1,25 @@
+[gd_resource type="AudioBusLayout" load_steps=3 format=3]
+
+[sub_resource type="AudioEffectPlaybackSpeedScale" id="AudioEffectPlaybackSpeedScale_breaker"]
+speed_scale = 2.0
+
+[sub_resource type="AudioEffectPitchShift" id="AudioEffectPitchShift_breaker"]
+pitch_scale = 0.35
+
+[resource]
+bus/0/name = &"Master"
+bus/0/solo = false
+bus/0/mute = false
+bus/0/bypass_fx = false
+bus/0/volume_db = 0.0
+bus/0/send = &""
+bus/1/name = &"BreakerSfx"
+bus/1/solo = false
+bus/1/mute = false
+bus/1/bypass_fx = false
+bus/1/volume_db = 0.0
+bus/1/send = &"Master"
+bus/1/effect/0/effect = SubResource("AudioEffectPlaybackSpeedScale_breaker")
+bus/1/effect/0/enabled = true
+bus/1/effect/1/effect = SubResource("AudioEffectPitchShift_breaker")
+bus/1/effect/1/enabled = true

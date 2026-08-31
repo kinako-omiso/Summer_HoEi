@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://b5llg85j1vtg"
+path="res://.godot/imported/ドアチャイム1 (1).mp3-ce8aae8ea2698800a285cdb93e511bb5.mp3str"
+
+[deps]
+
+source_file="res://assets/Music/ドアチャイム1 (1).mp3"
+dest_files=["res://.godot/imported/ドアチャイム1 (1).mp3-ce8aae8ea2698800a285cdb93e511bb5.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4
