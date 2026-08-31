@@ -1,7 +1,7 @@
 extends CharacterBody3D
 
 
-@export var speed: float = 4.0
+@export var speed: float = 3.5
 @export var accel: float = 10.0
 @export var player: CharacterBody3D
 
@@ -28,6 +28,9 @@ extends CharacterBody3D
 # 強制的にPlayerの位置を取得するまでの時間
 # Inspectorから変更可能
 @export var forced_detection_time: float = 30.0
+
+var phase: int 
+var final: int 
 
 
 # ============================================================
@@ -81,7 +84,14 @@ var interaction_path_update_pending := false
 var forced_detection_timer := 0.0
 
 func _ready():
-	forced_detection_timer = forced_detection_time - 3
+	phase = GameManager.retry_count
+	final = GameManager.floors_number
+	if (final - phase)!= 0:
+		forced_detection_timer = forced_detection_time / (final - phase)
+	
+
+	
+		
 
 
 
@@ -123,7 +133,7 @@ func _physics_process(delta: float) -> void:
 	else:
 
 		# Playerを見ていないので時間を進める
-		forced_detection_timer += delta
+		forced_detection_timer += delta * (phase + 1)
 
 
 		# ----------------------------------------------------
@@ -511,7 +521,7 @@ func _physics_process(delta: float) -> void:
 
 			var dir := diff.normalized()
 
-			var target_velocity := dir * speed
+			var target_velocity := dir * (speed + phase / 2.0)
 
 			if state != State.CHASE:
 				target_velocity *= interaction_detection_boost

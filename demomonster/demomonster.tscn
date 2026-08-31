@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://cj446712mcn8c" path="res://demomonster/demomonster.gd" id="1_3wso1"]
 [ext_resource type="PackedScene" uid="uid://vwjycm8djhca" path="res://assets/3DModel/robot_cc.tscn" id="2_3wso1"]
+[ext_resource type="AudioStream" uid="uid://dhk4gfnjo8cj4" path="res://assets/Music/robotrun.mp3" id="3_lltaq"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_3wso1"]
 radius = 0.32080078
@@ -11,6 +12,7 @@ height = 2.8276367
 collision_layer = 2
 collision_mask = 5
 script = ExtResource("1_3wso1")
+view_angle = 120.0
 interaction_detection_distance = 45.0
 
 [node name="pivod" type="Node3D" parent="." unique_id=213938137]
@@ -29,3 +31,12 @@ light_color = Color(0.80813736, 3.272891e-06, 7.70092e-07, 1)
 
 [node name="DebugCamera" type="Camera3D" parent="." unique_id=10663027]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.6012452, 2.802894)
+
+[node name="AudioStreamPlayer3D" type="AudioStreamPlayer3D" parent="." unique_id=1352193895]
+stream = ExtResource("3_lltaq")
+attenuation_model = 1
+volume_db = 30.0
+unit_size = 5.0
+max_db = 6.0
+autoplay = true
+max_distance = 45.0
