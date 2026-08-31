@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://ct5xpy3mhlr6q"]
 
-[ext_resource type="PackedScene" uid="uid://fcj6wo2p3dco" path="res://assets/3DModel/door.glb" id="1_model"]
+[ext_resource type="PackedScene" path="res://assets/3DModel/カラー/ドア.blend" id="1_model"]
 [ext_resource type="Script" uid="uid://dfn456pm3a5ym" path="res://door_interactive.gd" id="2_script"]
 [ext_resource type="AudioStream" path="res://assets/Music/クローゼットを閉める.mp3" id="3_door_sound"]
 

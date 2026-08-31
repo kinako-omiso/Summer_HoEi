@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://bltrc0av4iehj"]
 
 [ext_resource type="Script" uid="uid://bafdgvvgwfh61" path="res://world_surface.gd" id="1_b0hpt"]
-[ext_resource type="PackedScene" uid="uid://bl7vdv7n8vl3x" path="res://assets/3DModel/fluorescent_light.glb" id="2_jpdj3"]
+[ext_resource type="PackedScene" path="res://assets/3DModel/カラー/蛍光灯.blend" id="2_jpdj3"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_k8684"]
 size = Vector3(8.337112, 0.37493896, 1.2137451)

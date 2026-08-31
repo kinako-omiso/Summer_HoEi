@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://vwjycm8djhca"]
 
-[ext_resource type="PackedScene" uid="uid://dvp2s2raprien" path="res://assets/3DModel/robot_cc.glb" id="1_jii3t"]
+[ext_resource type="PackedScene" path="res://assets/3DModel/カラー/ロボ(ノーマル).blend" id="1_jii3t"]
 [ext_resource type="Script" uid="uid://b4d42v7jdypiw" path="res://robot.gd" id="2_ouqss"]
 
 [node name="robot_cc" unique_id=358564966 instance=ExtResource("1_jii3t")]

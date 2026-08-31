@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://bw13s5xgdjcvd"]
 
 [ext_resource type="Script" uid="uid://bafdgvvgwfh61" path="res://world_surface.gd" id="1_5vgpp"]
-[ext_resource type="PackedScene" uid="uid://klaayul3hl22" path="res://assets/3DModel/emergency_exit.glb" id="2_4wp8j"]
+[ext_resource type="PackedScene" path="res://assets/3DModel/カラー/非常口.blend" id="2_4wp8j"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_k8684"]
 size = Vector3(0.6602783, 4.82555, 3.1955261)
