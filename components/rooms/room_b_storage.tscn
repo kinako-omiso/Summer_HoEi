@@ -8,6 +8,8 @@
 [ext_resource type="PackedScene" path="res://components/rooms/plant_placeholder.tscn" id="6_plant"]
 [ext_resource type="PackedScene" path="res://assets/3DModel/locker.tscn" id="7_locker"]
 [ext_resource type="PackedScene" path="res://assets/3DModel/locker_door.tscn" id="8_locker_door"]
+[ext_resource type="PackedScene" uid="uid://bciii0qscgaai" path="res://assets/3DModel/fire_hydrant.tscn" id="9_fire_hydrant"]
+[ext_resource type="PackedScene" uid="uid://lpuknxyxaylm" path="res://assets/3DModel/chair.tscn" id="10_chair"]
 
 [node name="RoomBStorage" type="Node3D" unique_id=1171824386 groups=["room_components"]]
 script = ExtResource("1_room")
@@ -31,19 +33,27 @@ transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -6.87, 3.15, 0)
 [node name="Breaker" parent="." unique_id=602441158 instance=ExtResource("5_breaker")]
 transform = Transform3D(1.1924881e-08, 0, -1, 0, 1, 0, 1, 0, 1.1924881e-08, -6.62, 2, 4.8)
 
+[node name="FireHydrantNorth" parent="." unique_id=35101825 instance=ExtResource("9_fire_hydrant")]
+transform = Transform3D(0.11160056, 0, -0.99375314, 0, 1, 0, 0.99375314, 0, 0.11160056, -6.611428, 1.1689672, -4.221319)
+
+[node name="RandomStoragePropCandidates" type="Node3D" parent="." unique_id=926267220]
+
+[node name="Chair01" parent="RandomStoragePropCandidates" unique_id=1970647185 groups=["random_storage_prop_candidates"] instance=ExtResource("10_chair")]
+transform = Transform3D(6.2783295e-07, 0, 2, 0, 2, 0, -2, 0, 6.2783295e-07, -3.5, 0.835, -1.263)
+
+[node name="Chair02" parent="RandomStoragePropCandidates" unique_id=1744075950 groups=["random_storage_prop_candidates"] instance=ExtResource("10_chair")]
+transform = Transform3D(6.2783295e-07, 0, -2, 0, 2, 0, 2, 0, 6.2783295e-07, 3.5, 0.8351487, -4)
+
 [node name="RandomPlantCandidates" type="Node3D" parent="." unique_id=932766284]
 
-[node name="Plant01" parent="RandomPlantCandidates" unique_id=62276356 groups=["random_plant_candidates"] instance=ExtResource("6_plant")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.5, 0.15, -4)
-
 [node name="Plant02" parent="RandomPlantCandidates" unique_id=1587312154 groups=["random_plant_candidates"] instance=ExtResource("6_plant")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.5, 0.15, -0.5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.224441, 0.13649285, -1.723022)
 
 [node name="Plant03" parent="RandomPlantCandidates" unique_id=1432357021 groups=["random_plant_candidates"] instance=ExtResource("6_plant")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.5, 0.15, -4)
 
-[node name="Plant04" parent="RandomPlantCandidates" unique_id=282788685 groups=["random_plant_candidates"] instance=ExtResource("6_plant")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.5, 0.15, -0.5)
+[node name="Plant04" parent="RandomPlantCandidates" unique_id=282788685 instance=ExtResource("6_plant")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.779, 0.15, -0.5)
 
 [node name="Plant05" parent="RandomPlantCandidates" unique_id=1264968142 groups=["random_plant_candidates"] instance=ExtResource("6_plant")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.5, 0.15, 3)

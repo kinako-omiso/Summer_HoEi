@@ -7,6 +7,7 @@ const ROOM_B := "res://components/rooms/room_b_storage.tscn"
 const DESK_GROUP := &"random_desk_monitor_candidates"
 const PLANT_GROUP := &"random_plant_candidates"
 const LOCKER_GROUP := &"random_locker_candidates"
+const STORAGE_PROP_GROUP := &"random_storage_prop_candidates"
 
 var _has_run := false
 
@@ -22,7 +23,11 @@ func _process(_delta: float) -> bool:
 func _run_validation() -> void:
 	var failures: Array[String] = []
 	_validate_room(ROOM_A, {DESK_GROUP: 5, PLANT_GROUP: 0, LOCKER_GROUP: 0}, failures)
-	_validate_room(ROOM_B, {DESK_GROUP: 0, PLANT_GROUP: 5, LOCKER_GROUP: 5}, failures)
+	_validate_room(
+		ROOM_B,
+		{DESK_GROUP: 0, PLANT_GROUP: 3, LOCKER_GROUP: 5, STORAGE_PROP_GROUP: 2},
+		failures,
+	)
 
 	if failures.is_empty():
 		print("Validated both room component scenes.")
