@@ -45,6 +45,10 @@ enum State {
 var state := State.IDLE
 
 
+func is_chasing_player() -> bool:
+	return state == State.CHASE
+
+
 # ============================================================
 # 共通変数
 # ============================================================

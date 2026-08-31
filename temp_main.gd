@@ -35,6 +35,7 @@ var camera_change := 1
 var is_runtime_map_ready := false
 var _breaker_announcement_played := false
 var _breaker_announcement_pending := false
+var _breaker_is_off := false
 var _capture_sequence_playing := false
 var _game_over_ui_shown := false
 var _ending_transition_playing := false
@@ -44,9 +45,8 @@ func _ready() -> void:
 	if GameManager.retry_count >= building_floors_number:
 		get_tree().change_scene_to_file("res://assets/Video/event_movie.tscn")
 		return
-		
+
 	GameManager.floors_number = building_floors_number
-	_start_bgm()
 	_configure_audio_output()
 	player.process_mode = Node.PROCESS_MODE_DISABLED
 	monster.process_mode = Node.PROCESS_MODE_DISABLED
@@ -128,7 +128,6 @@ func _update_bgm_ducking() -> void:
 
 
 func _on_game_start_announcement_finished() -> void:
-	_start_bgm()
 	if _breaker_announcement_pending:
 		_breaker_announcement_pending = false
 		_play_breaker_announcement()
@@ -159,6 +158,7 @@ func _connect_start_elevator_signal() -> void:
 
 
 func _on_breaker_lights_out() -> void:
+	_breaker_is_off = true
 	_breaker_announcement_pending = false
 	var game_start_announcement_was_playing := announcement_1_player.playing
 	var announcement_was_stopped := game_start_announcement_was_playing
@@ -167,10 +167,9 @@ func _on_breaker_lights_out() -> void:
 	if announcement_2_player.playing:
 		announcement_2_player.stop()
 		announcement_was_stopped = true
-	if game_start_announcement_was_playing and not bgm_player.playing:
-		_start_bgm()
 	if announcement_was_stopped:
 		_update_bgm_ducking()
+	_update_chase_bgm()
 
 
 func _configure_audio_output() -> void:
@@ -189,7 +188,8 @@ func _configure_audio_output() -> void:
 
 func _on_bgm_player_finished() -> void:
 	# Fallback for stream formats that do not expose an internal loop setting.
-	bgm_player.play()
+	if _should_play_chase_bgm():
+		bgm_player.play()
 
 
 func _exit_tree() -> void:
@@ -200,6 +200,7 @@ func _exit_tree() -> void:
 func _process(_delta: float) -> void:
 	if not is_runtime_map_ready or _capture_sequence_playing or _ending_transition_playing:
 		return
+	_update_chase_bgm()
 	_check_breaker_in_center_view()
 	if camera_change == -1 and Input.is_action_just_pressed("debug_camera_change"):
 		player_camera.make_current()
@@ -207,6 +208,24 @@ func _process(_delta: float) -> void:
 	elif camera_change == 1 and Input.is_action_just_pressed("debug_camera_change"):
 		$demomonster/DebugCamera.make_current()
 		camera_change = -1
+
+
+func _update_chase_bgm() -> void:
+	if _should_play_chase_bgm():
+		if not bgm_player.playing:
+			_start_bgm()
+		else:
+			_update_bgm_ducking()
+	elif bgm_player.playing:
+		bgm_player.stop()
+
+
+func _should_play_chase_bgm() -> bool:
+	return (
+		_breaker_is_off
+		and is_instance_valid(monster)
+		and bool(monster.call(&"is_chasing_player"))
+	)
 
 
 func _check_breaker_in_center_view() -> void:
