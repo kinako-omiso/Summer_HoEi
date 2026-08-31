@@ -7,6 +7,7 @@ extends Node3D
 const DESK_CANDIDATE_GROUP := &"random_desk_monitor_candidates"
 const PLANT_CANDIDATE_GROUP := &"random_plant_candidates"
 const LOCKER_CANDIDATE_GROUP := &"random_locker_candidates"
+const STORAGE_PROP_CANDIDATE_GROUP := &"random_storage_prop_candidates"
 const GOAL_ELEVATOR_LIGHT_ENERGY := 4.0
 
 

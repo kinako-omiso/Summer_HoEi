@@ -10,6 +10,7 @@ const RANDOM_CANDIDATE_GROUPS := {
 	"desks": &"random_desk_monitor_candidates",
 	"plants": &"random_plant_candidates",
 	"lockers": &"random_locker_candidates",
+	"storage_props": &"random_storage_prop_candidates",
 	"pillars": &"pillar",
 }
 const GRID_SIZE := 3
@@ -26,6 +27,9 @@ const DOOR_SWING_CLEARANCE := AABB(
 	Vector3(-1.4, -3.2, -0.35),
 	Vector3(2.8, 4.6, 2.9)
 )
+const ENTRANCE_CANDIDATE_CLEAR_HALF_WIDTH := 1.75
+const ENTRANCE_CANDIDATE_CLEAR_DEPTH := 2.0
+const BREAKER_LOCKER_CLEARANCE := 1.75
 
 const SIDE_NORTH := "north"
 const SIDE_EAST := "east"
@@ -619,11 +623,70 @@ func _configure_room_walls(room: Node3D, entrances: Array, elevator_side: String
 
 
 func _remove_fixed_entrance_obstructions(room: Node3D, entrances: Array) -> void:
-	if entrances.has(SIDE_SOUTH):
-		var center_locker := room.get_node_or_null("RandomLockerCandidates/Locker03")
-		if center_locker != null:
-			center_locker.free()
+	_remove_centered_entrance_candidates(room, entrances)
 	_relocate_breaker(room, entrances)
+	_remove_breaker_overlapping_lockers(room)
+
+
+func _remove_centered_entrance_candidates(room: Node3D, entrances: Array) -> void:
+	for group_name: StringName in [
+		&"random_plant_candidates",
+		&"random_locker_candidates",
+	]:
+		for candidate: Node in get_tree().get_nodes_in_group(group_name):
+			if not room.is_ancestor_of(candidate):
+				continue
+			var candidate_3d := candidate as Node3D
+			if candidate_3d == null:
+				continue
+			var room_position := room.to_local(candidate_3d.global_position)
+			for side: String in entrances:
+				if _position_is_in_centered_entrance(room_position, side):
+					candidate_3d.free()
+					break
+
+
+func _position_is_in_centered_entrance(position: Vector3, side: String) -> bool:
+	match side:
+		SIDE_NORTH:
+			return (
+				absf(position.x) <= ENTRANCE_CANDIDATE_CLEAR_HALF_WIDTH
+				and position.z <= -ROOM_WALL_OFFSET + ENTRANCE_CANDIDATE_CLEAR_DEPTH
+			)
+		SIDE_EAST:
+			return (
+				absf(position.z) <= ENTRANCE_CANDIDATE_CLEAR_HALF_WIDTH
+				and position.x >= ROOM_WALL_OFFSET - ENTRANCE_CANDIDATE_CLEAR_DEPTH
+			)
+		SIDE_SOUTH:
+			return (
+				absf(position.x) <= ENTRANCE_CANDIDATE_CLEAR_HALF_WIDTH
+				and position.z >= ROOM_WALL_OFFSET - ENTRANCE_CANDIDATE_CLEAR_DEPTH
+			)
+		SIDE_WEST:
+			return (
+				absf(position.z) <= ENTRANCE_CANDIDATE_CLEAR_HALF_WIDTH
+				and position.x <= -ROOM_WALL_OFFSET + ENTRANCE_CANDIDATE_CLEAR_DEPTH
+			)
+	return false
+
+
+func _remove_breaker_overlapping_lockers(room: Node3D) -> void:
+	var breaker := _find_room_breaker(room)
+	if breaker == null:
+		return
+	var breaker_position := room.to_local(breaker.global_position)
+	var breaker_floor_position := Vector2(breaker_position.x, breaker_position.z)
+	for candidate: Node in get_tree().get_nodes_in_group(&"random_locker_candidates"):
+		if not room.is_ancestor_of(candidate):
+			continue
+		var locker := candidate as Node3D
+		if locker == null:
+			continue
+		var locker_position := room.to_local(locker.global_position)
+		var locker_floor_position := Vector2(locker_position.x, locker_position.z)
+		if breaker_floor_position.distance_to(locker_floor_position) < BREAKER_LOCKER_CLEARANCE:
+			locker.free()
 
 
 func _keep_one_map_breaker(room_instances: Array[Node3D]) -> void:
