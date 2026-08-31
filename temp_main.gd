@@ -37,6 +37,7 @@ const CHASE_BGM_FADE_OUT_DELAY_FRAMES := 20
 
 var camera_change := 1
 var is_runtime_map_ready := false
+var _game_start_announcement_started := false
 var _breaker_announcement_played := false
 var _breaker_announcement_pending := false
 var _breaker_is_off := false
@@ -134,8 +135,9 @@ func _start_bgm() -> void:
 
 
 func _play_game_start_announcement() -> void:
-	if _breaker_is_off:
+	if _breaker_is_off or _game_start_announcement_started:
 		return
+	_game_start_announcement_started = true
 	announcement_1_player.volume_db = announcement_volume_db
 	announcement_1_player.play()
 	_update_bgm_ducking()
@@ -414,6 +416,7 @@ func _should_play_chase_bgm() -> bool:
 func _check_breaker_in_center_view() -> void:
 	if (
 		_breaker_is_off
+		or not _game_start_announcement_started
 		or _breaker_announcement_played
 		or not is_instance_valid(player_camera)
 		or not player_camera.is_current()
