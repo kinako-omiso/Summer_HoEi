@@ -6,6 +6,7 @@ signal runtime_map_ready(seed_value: int)
 const CAPTURE_MOVIE_UI_TIME := 3.71
 const ENDING_FADE_DURATION := 2.0
 const ENDING_MOVIE_SCENE := "res://assets/Video/event_movie.tscn"
+const CHASE_BGM_FADE_OUT_DELAY_FRAMES := 20
 
 @export_category("Game Rules")
 @export_range(1, 10, 1) var building_floors_number: int = 3
@@ -39,6 +40,7 @@ var _breaker_announcement_pending := false
 var _breaker_is_off := false
 var _bgm_fade_tween: Tween
 var _bgm_fading_out := false
+var _chase_lost_frame_count := 0
 var _capture_sequence_playing := false
 var _game_over_ui_shown := false
 var _ending_transition_playing := false
@@ -218,8 +220,16 @@ func _process(_delta: float) -> void:
 
 func _update_chase_bgm() -> void:
 	if _should_play_chase_bgm():
+		_chase_lost_frame_count = 0
 		_fade_in_chase_bgm()
-	else:
+		return
+
+	if not bgm_player.playing:
+		_chase_lost_frame_count = 0
+		return
+
+	_chase_lost_frame_count += 1
+	if _chase_lost_frame_count >= CHASE_BGM_FADE_OUT_DELAY_FRAMES:
 		_fade_out_chase_bgm()
 
 
