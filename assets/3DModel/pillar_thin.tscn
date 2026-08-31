@@ -1,6 +1,6 @@
 [gd_scene load_steps=4 format=3]
 
-[ext_resource type="PackedScene" path="res://assets/3DModel/pillar_thin.glb" id="1_model"]
+[ext_resource type="PackedScene" path="res://assets/3DModel/カラー/柱細.blend" id="1_model"]
 [ext_resource type="Script" path="res://world_surface.gd" id="2_script"]
 
 [sub_resource type="BoxShape3D" id="BoxShape_model"]

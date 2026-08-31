@@ -6,14 +6,16 @@ signal hit
 signal survive
 
 @export var SPEED = 5.0
+@export_range(0.001, 0.02, 0.0005) var base_mouse_sensitivity := 0.005
 const JUMP_VELOCITY = 4.5
 var game_clear = false
 
 # カメラ操作（Y軸回転はプレイヤーの回転としてカメラは追従させる）
 func _input(event):
 	if event is InputEventMouseMotion:
-		rotate_y(-event.relative.x * 0.005)
-		$PlayerCamera.rotate_x(-event.relative.y * 0.005)
+		var sensitivity := base_mouse_sensitivity * GameSettings.mouse_sensitivity_multiplier
+		rotate_y(-event.relative.x * sensitivity)
+		$PlayerCamera.rotate_x(-event.relative.y * sensitivity)
 
 # Playerの操作
 func _physics_process(delta: float) -> void:
@@ -67,10 +69,9 @@ func _unhandled_input(event):
 				global_position
 			)
 
-# シグナル発信とプレイヤーの破棄
+# シグナル発信（捕獲後の停止処理はメインシーン側で行う）
 func die():
 	hit.emit()
-	queue_free()
 
 func _success():
 	await get_tree().create_timer(3.0).timeout

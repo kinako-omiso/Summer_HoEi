@@ -8,6 +8,7 @@
 [ext_resource type="AudioStream" uid="uid://cjdfe855e54no" path="res://assets/Music/BrokenMachine7.wav" id="6_bgm"]
 [ext_resource type="AudioStream" uid="uid://c05625y41h8qm" path="res://assets/Music/Announcement1(1).wav" id="7_announcement_1"]
 [ext_resource type="AudioStream" uid="uid://ccs8xh4ewui6g" path="res://assets/Music/Announcement2(1).wav" id="8_announcement_2"]
+[ext_resource type="VideoStream" uid="uid://dudpfsqtvurjs" path="res://assets/Video/0001-0250.ogv" id="9_capture_movie"]
 
 [sub_resource type="NavigationMesh" id="NavigationMesh_runtime"]
 geometry_parsed_geometry_type = 1
@@ -27,7 +28,7 @@ ambient_light_energy = 0.0
 [node name="TempMain" type="Node" unique_id=673077450]
 script = ExtResource("1_main")
 bgm_volume_db = 0.0
-announcement_bgm_volume_db = -40.0
+chase_bgm_fade_duration = 2.0
 
 [node name="NavigationRegion3D" type="NavigationRegion3D" parent="." unique_id=748385280]
 navigation_mesh = SubResource("NavigationMesh_runtime")
@@ -46,17 +47,46 @@ environment = SubResource("Environment_runtime")
 
 [node name="BGMPlayer" type="AudioStreamPlayer" parent="." unique_id=1872239753]
 stream = ExtResource("6_bgm")
+bus = &"BGM"
+
+[node name="BGMSecondaryPlayer" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("6_bgm")
+bus = &"BGM"
 
 [node name="Announcement1Player" type="AudioStreamPlayer" parent="." unique_id=1411407260]
 stream = ExtResource("7_announcement_1")
+bus = &"Announcement"
 
 [node name="Announcement2Player" type="AudioStreamPlayer" parent="." unique_id=746606756]
 stream = ExtResource("8_announcement_2")
+bus = &"Announcement"
+
+[node name="CaptureMoviePlayer" type="VideoStreamPlayer" parent="." unique_id=887747397]
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+stream = ExtResource("9_capture_movie")
+expand = true
 
 [node name="ResultUserInterface" parent="." unique_id=1197500075 instance=ExtResource("5_xcf3y")]
 
+[node name="EndingFadeLayer" type="CanvasLayer" parent="." unique_id=407552479]
+layer = 100
+
+[node name="EndingFade" type="ColorRect" parent="EndingFadeLayer" unique_id=849268328]
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0)
+
 [connection signal="hit" from="Player" to="." method="_on_player_hit"]
 [connection signal="survive" from="Player" to="." method="_on_player_survive"]
-[connection signal="finished" from="BGMPlayer" to="." method="_on_bgm_player_finished"]
 [connection signal="finished" from="Announcement1Player" to="." method="_on_game_start_announcement_finished"]
 [connection signal="finished" from="Announcement2Player" to="." method="_on_breaker_announcement_finished"]
+[connection signal="finished" from="CaptureMoviePlayer" to="." method="_on_capture_movie_finished"]

@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://c0qyote2mely8"]
 
 [ext_resource type="Script" uid="uid://dw6mbapcjv47i" path="res://demobreaker/interactive_breaker.gd" id="1_5wp76"]
-[ext_resource type="PackedScene" uid="uid://c583yl3vgw15i" path="res://assets/3DModel/breaker_bar.glb" id="2_5wp76"]
+[ext_resource type="PackedScene" path="res://assets/3DModel/カラー/ブレーカーレバー.blend" id="2_5wp76"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_uevw2"]
 size = Vector3(1.3707886, 1.7890396, 1.6185379)

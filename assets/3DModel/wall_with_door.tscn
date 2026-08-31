@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://bwrwvky5wfc2c"]
 
-[ext_resource type="PackedScene" uid="uid://v2a33mjpfoby" path="res://assets/3DModel/wall_with_door.glb" id="1_model"]
+[ext_resource type="PackedScene" path="res://assets/3DModel/カラー/壁(ドア付).blend" id="1_model"]
 [ext_resource type="Script" uid="uid://bafdgvvgwfh61" path="res://world_surface.gd" id="2_script"]
 [ext_resource type="PackedScene" uid="uid://ct5xpy3mhlr6q" path="res://assets/3DModel/door_interactive.tscn" id="3_door"]
 

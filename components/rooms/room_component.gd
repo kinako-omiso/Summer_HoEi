@@ -7,6 +7,8 @@ extends Node3D
 const DESK_CANDIDATE_GROUP := &"random_desk_monitor_candidates"
 const PLANT_CANDIDATE_GROUP := &"random_plant_candidates"
 const LOCKER_CANDIDATE_GROUP := &"random_locker_candidates"
+const STORAGE_PROP_CANDIDATE_GROUP := &"random_storage_prop_candidates"
+const GOAL_ELEVATOR_LIGHT_ENERGY := 4.0
 
 
 # Match the current breaker behavior in temp_main.gd: a breaker can be used
@@ -25,3 +27,8 @@ func _on_breaker_lights_out() -> void:
 				material.emission_enabled = false
 	get_tree().set_group("player_lights", "light_energy", 1.0)
 	get_tree().set_group("robot_lights", "light_energy", 6.0)
+	get_tree().set_group(
+		&"goal_elevator_lights",
+		&"light_energy",
+		GOAL_ELEVATOR_LIGHT_ENERGY,
+	)

@@ -3,13 +3,19 @@
 [ext_resource type="Script" uid="uid://bafdgvvgwfh61" path="res://world_surface.gd" id="1_51g7k"]
 [ext_resource type="Script" uid="uid://7x4e6n5h1xpf" path="res://demobreaker/breaker.gd" id="1_k3pt2"]
 [ext_resource type="PackedScene" uid="uid://c0qyote2mely8" path="res://demobreaker/interactive_breaker.tscn" id="3_mndru"]
-[ext_resource type="PackedScene" uid="uid://c1oyfieyljyev" path="res://assets/3DModel/breaker_new.glb" id="4_k3pt2"]
+[ext_resource type="PackedScene" path="res://assets/3DModel/カラー/ブレーカー新.blend" id="4_k3pt2"]
+[ext_resource type="AudioStream" path="res://assets/Music/電車停車.mp3" id="5_breaker_sound"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_k8684"]
 size = Vector3(0.5046387, 1, 0.23236084)
 
 [node name="BreakerManager" type="Node3D" unique_id=1977523128 groups=["map_breaker"]]
 script = ExtResource("1_k3pt2")
+
+[node name="BreakerSoundPlayer" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("5_breaker_sound")
+pitch_scale = 4.0
+bus = &"BreakerSfx"
 
 [node name="Breaker" type="StaticBody3D" parent="." unique_id=1162135650]
 transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 0, 0, 0.084869385)

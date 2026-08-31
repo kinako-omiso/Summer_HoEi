@@ -10,6 +10,7 @@ const RANDOM_CANDIDATE_GROUPS := {
 	"desks": &"random_desk_monitor_candidates",
 	"plants": &"random_plant_candidates",
 	"lockers": &"random_locker_candidates",
+	"storage_props": &"random_storage_prop_candidates",
 	"pillars": &"pillar",
 }
 const GRID_SIZE := 3
@@ -26,6 +27,9 @@ const DOOR_SWING_CLEARANCE := AABB(
 	Vector3(-1.4, -3.2, -0.35),
 	Vector3(2.8, 4.6, 2.9)
 )
+const ENTRANCE_CANDIDATE_CLEAR_HALF_WIDTH := 1.75
+const ENTRANCE_CANDIDATE_CLEAR_DEPTH := 2.0
+const BREAKER_LOCKER_CLEARANCE := 1.75
 
 const SIDE_NORTH := "north"
 const SIDE_EAST := "east"
@@ -619,11 +623,70 @@ func _configure_room_walls(room: Node3D, entrances: Array, elevator_side: String
 
 
 func _remove_fixed_entrance_obstructions(room: Node3D, entrances: Array) -> void:
-	if entrances.has(SIDE_SOUTH):
-		var center_locker := room.get_node_or_null("RandomLockerCandidates/Locker03")
-		if center_locker != null:
-			center_locker.free()
+	_remove_centered_entrance_candidates(room, entrances)
 	_relocate_breaker(room, entrances)
+	_remove_breaker_overlapping_lockers(room)
+
+
+func _remove_centered_entrance_candidates(room: Node3D, entrances: Array) -> void:
+	for group_name: StringName in [
+		&"random_plant_candidates",
+		&"random_locker_candidates",
+	]:
+		for candidate: Node in get_tree().get_nodes_in_group(group_name):
+			if not room.is_ancestor_of(candidate):
+				continue
+			var candidate_3d := candidate as Node3D
+			if candidate_3d == null:
+				continue
+			var room_position := room.to_local(candidate_3d.global_position)
+			for side: String in entrances:
+				if _position_is_in_centered_entrance(room_position, side):
+					candidate_3d.free()
+					break
+
+
+func _position_is_in_centered_entrance(position: Vector3, side: String) -> bool:
+	match side:
+		SIDE_NORTH:
+			return (
+				absf(position.x) <= ENTRANCE_CANDIDATE_CLEAR_HALF_WIDTH
+				and position.z <= -ROOM_WALL_OFFSET + ENTRANCE_CANDIDATE_CLEAR_DEPTH
+			)
+		SIDE_EAST:
+			return (
+				absf(position.z) <= ENTRANCE_CANDIDATE_CLEAR_HALF_WIDTH
+				and position.x >= ROOM_WALL_OFFSET - ENTRANCE_CANDIDATE_CLEAR_DEPTH
+			)
+		SIDE_SOUTH:
+			return (
+				absf(position.x) <= ENTRANCE_CANDIDATE_CLEAR_HALF_WIDTH
+				and position.z >= ROOM_WALL_OFFSET - ENTRANCE_CANDIDATE_CLEAR_DEPTH
+			)
+		SIDE_WEST:
+			return (
+				absf(position.z) <= ENTRANCE_CANDIDATE_CLEAR_HALF_WIDTH
+				and position.x <= -ROOM_WALL_OFFSET + ENTRANCE_CANDIDATE_CLEAR_DEPTH
+			)
+	return false
+
+
+func _remove_breaker_overlapping_lockers(room: Node3D) -> void:
+	var breaker := _find_room_breaker(room)
+	if breaker == null:
+		return
+	var breaker_position := room.to_local(breaker.global_position)
+	var breaker_floor_position := Vector2(breaker_position.x, breaker_position.z)
+	for candidate: Node in get_tree().get_nodes_in_group(&"random_locker_candidates"):
+		if not room.is_ancestor_of(candidate):
+			continue
+		var locker := candidate as Node3D
+		if locker == null:
+			continue
+		var locker_position := room.to_local(locker.global_position)
+		var locker_floor_position := Vector2(locker_position.x, locker_position.z)
+		if breaker_floor_position.distance_to(locker_floor_position) < BREAKER_LOCKER_CLEARANCE:
+			locker.free()
 
 
 func _keep_one_map_breaker(room_instances: Array[Node3D]) -> void:
@@ -930,8 +993,7 @@ func _add_elevator_terminal(
 	# Room floors top out at Y=0.15. Raising the enclosure by 0.15 aligns
 	# its floor collision with the room and removes the doorway step.
 	elevator.position = Vector3(0.0, 3.15, 4.28)
-	if role == "start":
-		_add_start_elevator_light(elevator)
+	_add_elevator_light(elevator, role)
 
 	var door := ELEVATOR_DOOR.instantiate() as Node3D
 	door.name = "ElevatorDoor"
@@ -943,15 +1005,17 @@ func _add_elevator_terminal(
 	parent.add_child(door)
 
 
-func _add_start_elevator_light(elevator: Node3D) -> void:
+func _add_elevator_light(elevator: Node3D, role: String) -> void:
 	var ceiling_light := OmniLight3D.new()
 	ceiling_light.name = "CeilingLight"
 	ceiling_light.position = ELEVATOR_LIGHT_POSITION
 	ceiling_light.layers = 4
-	ceiling_light.light_energy = CEILING_LIGHT_ENERGY
+	ceiling_light.light_energy = CEILING_LIGHT_ENERGY if role == "start" else 0.0
 	ceiling_light.omni_range = CEILING_LIGHT_RANGE
 	ceiling_light.omni_attenuation = CEILING_LIGHT_ATTENUATION
-	ceiling_light.add_to_group(&"lights")
+	ceiling_light.add_to_group(
+		"lights" if role == "start" else "goal_elevator_lights"
+	)
 	elevator.add_child(ceiling_light)
 
 
@@ -1031,9 +1095,17 @@ func _refresh_room_scene_paths() -> bool:
 	var filenames := directory.get_files()
 	filenames.sort()
 	for filename: String in filenames:
-		if not _is_room_scene_filename(filename):
+		# Exported PCKs expose remapped scenes as `*.tscn.remap`. Load them
+		# through their original `res://...tscn` path so ResourceLoader applies
+		# the remap automatically.
+		var resource_filename := (
+			filename.trim_suffix(".remap")
+			if filename.ends_with(".remap")
+			else filename
+		)
+		if not _is_room_scene_filename(resource_filename):
 			continue
-		var scene_path := "%s/%s" % [ROOM_SCENE_DIRECTORY, filename]
+		var scene_path := "%s/%s" % [ROOM_SCENE_DIRECTORY, resource_filename]
 		# Reload the saved scene and all of its external dependencies for every
 		# map generation. This bypasses stale ResourceLoader cache entries during
 		# an editor play session without requiring a project restart.

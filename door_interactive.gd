@@ -7,6 +7,7 @@ extends AnimatableBody3D
 @onready var interaction_area: Area3D = $InteractionArea
 # ドア本体の当たり判定ノード（名前が違う場合はご自身のシーン名に合わせて変更してください）
 @onready var door_collision: CollisionShape3D = $CollisionShape3D
+@onready var door_sound_player: AudioStreamPlayer3D = $DoorSoundPlayer
 
 @export var navigation_link: NavigationLink3D
 
@@ -78,6 +79,7 @@ func _toggle_door() -> void:
 		return
 
 	_is_moving = true
+	door_sound_player.play()
 	
 	# 【開く場合】動き出すタイミングでコリジョンを速やかに無効化（すり抜け可能に）
 	if not is_open:

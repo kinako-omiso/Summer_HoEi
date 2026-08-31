@@ -49,7 +49,9 @@ func _run_validation() -> void:
 	_validate_room_floor_alignment(failures)
 	_validate_centered_door_fit(generator, failures)
 	_validate_elevator_door_fit(generator, failures)
+	_validate_elevator_activation_ranges(generator, failures)
 	_validate_authored_breaker_transforms(generator, failures)
+	_validate_storage_room_clearances(generator, failures)
 	_validate_authored_wall_preservation(generator, failures)
 	_validate_furniture_minimum(generator, failures)
 
@@ -263,6 +265,56 @@ func _validate_authored_breaker_transforms(generator: Node, failures: Array[Stri
 		if not is_equal_approx(moved_breaker.position.y, original_height):
 			failures.append("%s breaker authored height was lost during required relocation" % moved_room.name)
 		moved_room.free()
+
+
+func _validate_storage_room_clearances(generator: Node, failures: Array[String]) -> void:
+	var entrance_room := ROOM_B.instantiate() as Node3D
+	generator.add_child(entrance_room)
+	var doorway_plant := Node3D.new()
+	doorway_plant.name = "SyntheticWestDoorwayPlant"
+	doorway_plant.position = Vector3(-5.5, 0.15, -0.5)
+	doorway_plant.add_to_group(&"random_plant_candidates")
+	entrance_room.add_child(doorway_plant)
+	generator.call(
+		"_remove_fixed_entrance_obstructions",
+		entrance_room,
+		["west"],
+	)
+	if entrance_room.get_node_or_null("SyntheticWestDoorwayPlant") != null:
+		failures.append("west entrance did not remove its centered plant")
+	if entrance_room.get_node_or_null("RandomPlantCandidates/Plant04") == null:
+		failures.append("entrance cleanup removed the fixed interior Plant04")
+	entrance_room.free()
+
+	var breaker_room := ROOM_B.instantiate() as Node3D
+	generator.add_child(breaker_room)
+	generator.call(
+		"_remove_fixed_entrance_obstructions",
+		breaker_room,
+		["north", "east", "west"],
+	)
+	if breaker_room.get_node_or_null("RandomLockerCandidates/Locker05") != null:
+		failures.append("south-wall breaker relocation overlapped Locker05")
+	breaker_room.free()
+
+
+func _validate_elevator_activation_ranges(generator: Node, failures: Array[String]) -> void:
+	var start_door := ELEVATOR_DOOR.instantiate() as Node3D
+	start_door.set("is_start_door", true)
+	generator.add_child(start_door)
+	var start_area := start_door.get_node("ProximityArea") as Area3D
+	var start_shape := start_area.get_node("CollisionShape3D") as CollisionShape3D
+	if (start_shape.shape as BoxShape3D).size.z < 2.0 or start_area.position.z <= 0.0:
+		failures.append("start elevator activation area does not extend into the elevator")
+	start_door.free()
+
+	var goal_door := ELEVATOR_DOOR.instantiate() as Node3D
+	generator.add_child(goal_door)
+	var goal_area := goal_door.get_node("ProximityArea") as Area3D
+	var goal_shape := goal_area.get_node("CollisionShape3D") as CollisionShape3D
+	if (goal_shape.shape as BoxShape3D).size.z < 5.0 or goal_area.position.z >= 0.0:
+		failures.append("goal elevator activation area does not extend into the approach")
+	goal_door.free()
 
 
 func _validate_authored_wall_preservation(generator: Node, failures: Array[String]) -> void:
@@ -562,8 +614,19 @@ func _validate_instantiated_map(generator: Node, failures: Array[String]) -> voi
 				or not is_equal_approx(elevator_light.omni_attenuation, 1.25)
 			):
 				failures.append("start elevator light does not match ceiling lights")
-		elif elevator_light != null:
-			failures.append("goal elevator must not contain the start light")
+		else:
+			if elevator_light == null:
+				failures.append("goal elevator ceiling light is missing")
+			elif not elevator_light.position.is_equal_approx(Vector3(0.0, 2.45, -2.28)):
+				failures.append("goal elevator light is not below its ceiling fixture")
+			elif not elevator_light.is_in_group("goal_elevator_lights"):
+				failures.append("goal elevator ceiling light is not switchable")
+			elif (
+				not is_zero_approx(elevator_light.light_energy)
+				or not is_equal_approx(elevator_light.omni_range, 10.0)
+				or not is_equal_approx(elevator_light.omni_attenuation, 1.25)
+			):
+				failures.append("goal elevator light is not initially off")
 		var completion_area := elevator.get_node_or_null("GallePost") as Area3D
 		if completion_area == null:
 			failures.append("%s elevator completion area is missing" % expected_role)
@@ -600,6 +663,13 @@ func _validate_breaker_disables_emissive_surfaces(
 		failures.append("cannot validate emissive power-off without one breaker")
 		return
 	breakers[0].emit_signal("lights_out")
+	var goal_elevator_lights := generator.get_tree().get_nodes_in_group(
+		"goal_elevator_lights"
+	)
+	if goal_elevator_lights.size() != 1:
+		failures.append("generated map must have one goal elevator light")
+	elif not is_equal_approx(goal_elevator_lights[0].light_energy, 4.0):
+		failures.append("breaker did not turn on the goal elevator light")
 	for node: Node in emissive_surfaces:
 		var mesh_instance := node as MeshInstance3D
 		if mesh_instance == null or mesh_instance.mesh == null:

@@ -8,7 +8,8 @@ signal player_left_start_elevator
 @export_range(0.05, 5.0, 0.05) var animation_duration := 0.6
 @export_flags_3d_render var render_layers: int = 4
 @export var is_start_door := false
-@export_range(0.05, 1.0, 0.05) var start_activation_distance := 0.2
+@export_range(0.5, 5.0, 0.1) var start_activation_distance := 2.0
+@export_range(1.0, 8.0, 0.1) var goal_activation_distance := 5.0
 
 @onready var left_door_panel: AnimatableBody3D = $DoorPanelLeft
 @onready var right_door_panel: AnimatableBody3D = $DoorPanelRight
@@ -72,13 +73,16 @@ func _update_door_state() -> void:
 
 
 func _configure_start_proximity() -> void:
-	if not is_start_door:
-		return
 	var collision_shape := proximity_area.get_node("CollisionShape3D") as CollisionShape3D
 	var proximity_box := collision_shape.shape.duplicate() as BoxShape3D
-	proximity_box.size.z = start_activation_distance
+	var activation_distance := (
+		start_activation_distance if is_start_door else goal_activation_distance
+	)
+	proximity_box.size.z = activation_distance
 	collision_shape.shape = proximity_box
-	proximity_area.position.z = start_activation_distance * 0.5
+	proximity_area.position.z = (
+		activation_distance * 0.5 if is_start_door else -activation_distance * 0.5
+	)
 
 
 func _player_is_nearby() -> bool:
