@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://bh6bd0gjgyixf"]
 
-[ext_resource type="PackedScene" uid="uid://bex6nhgf14ya6" path="res://assets/3DModel/desk.glb" id="1_desk"]
-[ext_resource type="PackedScene" uid="uid://pmg44sp5d76w" path="res://assets/3DModel/monitor_temp.glb" id="2_monitor"]
+[ext_resource type="PackedScene" path="res://assets/3DModel/カラー/デスク.blend" id="1_desk"]
+[ext_resource type="PackedScene" path="res://assets/3DModel/カラー/モニター.blend" id="2_monitor"]
 [ext_resource type="Script" uid="uid://bafdgvvgwfh61" path="res://world_surface.gd" id="3_script"]
 
 [sub_resource type="BoxShape3D" id="BoxShape_tabletop"]

@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://bciii0qscgaai"]
 
-[ext_resource type="PackedScene" uid="uid://crlu868te3v5k" path="res://assets/3DModel/fire_hydrant.glb" id="1_e34p5"]
+[ext_resource type="PackedScene" path="res://assets/3DModel/カラー/消火栓.blend" id="1_e34p5"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_k8684"]
 size = Vector3(1.4535522, 1.9994507, 0.14196777)

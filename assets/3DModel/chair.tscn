@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://lpuknxyxaylm"]
 
 [ext_resource type="Script" uid="uid://bafdgvvgwfh61" path="res://world_surface.gd" id="1_f6r3n"]
-[ext_resource type="PackedScene" uid="uid://21fatw03s162" path="res://assets/3DModel/chair.glb" id="2_e13y1"]
+[ext_resource type="PackedScene" path="res://assets/3DModel/カラー/椅子.blend" id="2_e13y1"]
 
 [sub_resource type="CylinderShape3D" id="CylinderShape3D_k8684"]
 height = 0.4683838

@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://d3b1kuq802lkn"]
 
-[ext_resource type="PackedScene" uid="uid://dvv7njjtkk0mm" path="res://assets/3DModel/elevator.glb" id="1_model"]
+[ext_resource type="PackedScene" path="res://assets/3DModel/カラー/エレベーター.blend" id="1_model"]
 [ext_resource type="Script" uid="uid://c3d4gujhj8pmj" path="res://elevator.gd" id="2_script"]
 
 [sub_resource type="BoxShape3D" id="BoxShape_side"]
