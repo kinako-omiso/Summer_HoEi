@@ -251,20 +251,28 @@ func _fade_out_chase_bgm() -> void:
 	if not bgm_player.playing or _bgm_fading_out:
 		return
 	_bgm_fading_out = true
-	_cancel_bgm_fade()
-	_bgm_fade_tween = create_tween()
-	_bgm_fade_tween.tween_property(
-		bgm_player, "volume_db", -80.0, chase_bgm_fade_duration
-	)
+	_tween_bgm_volume(-80.0)
 	_bgm_fade_tween.tween_callback(_stop_bgm_after_fade_out)
 
 
 func _tween_bgm_volume(target_volume_db: float) -> void:
 	_cancel_bgm_fade()
-	_bgm_fade_tween = create_tween()
-	_bgm_fade_tween.tween_property(
-		bgm_player, "volume_db", target_volume_db, chase_bgm_fade_duration
+	var current_linear_volume := db_to_linear(bgm_player.volume_db)
+	var target_linear_volume := (
+		0.0 if target_volume_db <= -80.0 else db_to_linear(target_volume_db)
 	)
+	_bgm_fade_tween = create_tween()
+	_bgm_fade_tween.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	_bgm_fade_tween.tween_method(
+		_set_bgm_linear_volume,
+		current_linear_volume,
+		target_linear_volume,
+		chase_bgm_fade_duration
+	)
+
+
+func _set_bgm_linear_volume(linear_volume: float) -> void:
+	bgm_player.volume_db = linear_to_db(maxf(linear_volume, 0.0001))
 
 
 func _cancel_bgm_fade() -> void:
