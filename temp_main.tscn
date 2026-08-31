@@ -47,15 +47,19 @@ environment = SubResource("Environment_runtime")
 
 [node name="BGMPlayer" type="AudioStreamPlayer" parent="." unique_id=1872239753]
 stream = ExtResource("6_bgm")
+bus = &"BGM"
 
 [node name="BGMSecondaryPlayer" type="AudioStreamPlayer" parent="."]
 stream = ExtResource("6_bgm")
+bus = &"BGM"
 
 [node name="Announcement1Player" type="AudioStreamPlayer" parent="." unique_id=1411407260]
 stream = ExtResource("7_announcement_1")
+bus = &"Announcement"
 
 [node name="Announcement2Player" type="AudioStreamPlayer" parent="." unique_id=746606756]
 stream = ExtResource("8_announcement_2")
+bus = &"Announcement"
 
 [node name="CaptureMoviePlayer" type="VideoStreamPlayer" parent="." unique_id=887747397]
 visible = false

@@ -49,6 +49,108 @@ theme_override_font_sizes/font_size = 100
 text = " "
 horizontal_alignment = 1
 
+[node name="SettingsPanel" type="GridContainer" parent="Control/VBoxContainer"]
+process_mode = 3
+visible = false
+custom_minimum_size = Vector2(720, 0)
+layout_mode = 2
+theme_override_constants/h_separation = 18
+theme_override_constants/v_separation = 10
+columns = 3
+
+[node name="MouseSensitivityLabel" type="Label" parent="Control/VBoxContainer/SettingsPanel"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 0.81960785, 1)
+theme_override_font_sizes/font_size = 28
+text = "マウス感度"
+
+[node name="MouseSensitivitySlider" type="HSlider" parent="Control/VBoxContainer/SettingsPanel"]
+process_mode = 3
+custom_minimum_size = Vector2(400, 42)
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = 0.1
+max_value = 2.0
+step = 0.05
+value = 1.0
+
+[node name="MouseSensitivityValue" type="Label" parent="Control/VBoxContainer/SettingsPanel"]
+custom_minimum_size = Vector2(80, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 0.81960785, 1)
+theme_override_font_sizes/font_size = 28
+text = "100%"
+horizontal_alignment = 2
+
+[node name="BgmVolumeLabel" type="Label" parent="Control/VBoxContainer/SettingsPanel"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 0.81960785, 1)
+theme_override_font_sizes/font_size = 28
+text = "BGM"
+
+[node name="BgmVolumeSlider" type="HSlider" parent="Control/VBoxContainer/SettingsPanel"]
+process_mode = 3
+custom_minimum_size = Vector2(400, 42)
+layout_mode = 2
+size_flags_horizontal = 3
+max_value = 1.0
+step = 0.01
+value = 1.0
+
+[node name="BgmVolumeValue" type="Label" parent="Control/VBoxContainer/SettingsPanel"]
+custom_minimum_size = Vector2(80, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 0.81960785, 1)
+theme_override_font_sizes/font_size = 28
+text = "100%"
+horizontal_alignment = 2
+
+[node name="AnnouncementVolumeLabel" type="Label" parent="Control/VBoxContainer/SettingsPanel"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 0.81960785, 1)
+theme_override_font_sizes/font_size = 28
+text = "アナウンス"
+
+[node name="AnnouncementVolumeSlider" type="HSlider" parent="Control/VBoxContainer/SettingsPanel"]
+process_mode = 3
+custom_minimum_size = Vector2(400, 42)
+layout_mode = 2
+size_flags_horizontal = 3
+max_value = 1.0
+step = 0.01
+value = 1.0
+
+[node name="AnnouncementVolumeValue" type="Label" parent="Control/VBoxContainer/SettingsPanel"]
+custom_minimum_size = Vector2(80, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 0.81960785, 1)
+theme_override_font_sizes/font_size = 28
+text = "100%"
+horizontal_alignment = 2
+
+[node name="SfxVolumeLabel" type="Label" parent="Control/VBoxContainer/SettingsPanel"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 0.81960785, 1)
+theme_override_font_sizes/font_size = 28
+text = "効果音"
+
+[node name="SfxVolumeSlider" type="HSlider" parent="Control/VBoxContainer/SettingsPanel"]
+process_mode = 3
+custom_minimum_size = Vector2(400, 42)
+layout_mode = 2
+size_flags_horizontal = 3
+max_value = 1.0
+step = 0.01
+value = 1.0
+
+[node name="SfxVolumeValue" type="Label" parent="Control/VBoxContainer/SettingsPanel"]
+custom_minimum_size = Vector2(80, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 0.81960785, 1)
+theme_override_font_sizes/font_size = 28
+text = "100%"
+horizontal_alignment = 2
+
 [node name="BackButton" type="Button" parent="Control/VBoxContainer" unique_id=1472577783]
 process_mode = 3
 visible = false
@@ -80,3 +182,7 @@ text = "タイトルに戻る"
 [connection signal="pressed" from="Control/VBoxContainer/BackButton" to="." method="_on_back_button_pressed"]
 [connection signal="pressed" from="Control/VBoxContainer/RetryButton" to="." method="_on_retry_button_pressed"]
 [connection signal="pressed" from="Control/VBoxContainer/TitleButton" to="." method="_on_title_button_pressed"]
+[connection signal="value_changed" from="Control/VBoxContainer/SettingsPanel/MouseSensitivitySlider" to="." method="_on_mouse_sensitivity_slider_value_changed"]
+[connection signal="value_changed" from="Control/VBoxContainer/SettingsPanel/BgmVolumeSlider" to="." method="_on_bgm_volume_slider_value_changed"]
+[connection signal="value_changed" from="Control/VBoxContainer/SettingsPanel/AnnouncementVolumeSlider" to="." method="_on_announcement_volume_slider_value_changed"]
+[connection signal="value_changed" from="Control/VBoxContainer/SettingsPanel/SfxVolumeSlider" to="." method="_on_sfx_volume_slider_value_changed"]

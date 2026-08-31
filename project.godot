@@ -22,6 +22,7 @@ default_bus_layout="res://default_bus_layout.tres"
 [autoload]
 
 GameManager="*uid://btiqp5ylrnrfw"
+GameSettings="*res://game_settings.gd"
 
 [display]
 
