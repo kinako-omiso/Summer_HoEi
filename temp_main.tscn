@@ -48,6 +48,9 @@ environment = SubResource("Environment_runtime")
 [node name="BGMPlayer" type="AudioStreamPlayer" parent="." unique_id=1872239753]
 stream = ExtResource("6_bgm")
 
+[node name="BGMSecondaryPlayer" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("6_bgm")
+
 [node name="Announcement1Player" type="AudioStreamPlayer" parent="." unique_id=1411407260]
 stream = ExtResource("7_announcement_1")
 
@@ -80,7 +83,6 @@ color = Color(0, 0, 0, 0)
 
 [connection signal="hit" from="Player" to="." method="_on_player_hit"]
 [connection signal="survive" from="Player" to="." method="_on_player_survive"]
-[connection signal="finished" from="BGMPlayer" to="." method="_on_bgm_player_finished"]
 [connection signal="finished" from="Announcement1Player" to="." method="_on_game_start_announcement_finished"]
 [connection signal="finished" from="Announcement2Player" to="." method="_on_breaker_announcement_finished"]
 [connection signal="finished" from="CaptureMoviePlayer" to="." method="_on_capture_movie_finished"]
