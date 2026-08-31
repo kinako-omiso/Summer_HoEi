@@ -14,6 +14,7 @@ const ENDING_MOVIE_SCENE := "res://assets/Video/event_movie.tscn"
 @export_range(-80.0, 12.0, 0.5, "suffix:dB") var bgm_volume_db := 6.0
 @export_range(-80.0, 12.0, 0.5, "suffix:dB") var announcement_bgm_volume_db := -40.0
 @export_range(-80.0, 12.0, 0.5, "suffix:dB") var announcement_volume_db := 0.0
+@export_range(0.1, 5.0, 0.1, "suffix:s") var chase_bgm_fade_duration := 1.0
 @export var audio_output_device := "Default"
 
 @export_category("Breaker Announcement")
@@ -36,6 +37,8 @@ var is_runtime_map_ready := false
 var _breaker_announcement_played := false
 var _breaker_announcement_pending := false
 var _breaker_is_off := false
+var _bgm_fade_tween: Tween
+var _bgm_fading_out := false
 var _capture_sequence_playing := false
 var _game_over_ui_shown := false
 var _ending_transition_playing := false
@@ -105,10 +108,10 @@ func _ready() -> void:
 
 
 func _start_bgm() -> void:
-	bgm_player.volume_db = bgm_volume_db
 	if bgm_player.stream == null:
 		push_error("BGMPlayer has no audio stream assigned.")
 		return
+	bgm_player.volume_db = -80.0
 	bgm_player.play()
 
 
@@ -189,6 +192,9 @@ func _configure_audio_output() -> void:
 func _on_bgm_player_finished() -> void:
 	# Fallback for stream formats that do not expose an internal loop setting.
 	if _should_play_chase_bgm():
+		_cancel_bgm_fade()
+		_bgm_fading_out = false
+		bgm_player.volume_db = _get_bgm_target_volume()
 		bgm_player.play()
 
 
@@ -212,12 +218,64 @@ func _process(_delta: float) -> void:
 
 func _update_chase_bgm() -> void:
 	if _should_play_chase_bgm():
+		_fade_in_chase_bgm()
+	else:
+		_fade_out_chase_bgm()
+
+
+func _fade_in_chase_bgm() -> void:
+	if not bgm_player.playing:
+		_start_bgm()
 		if not bgm_player.playing:
-			_start_bgm()
-		else:
-			_update_bgm_ducking()
-	elif bgm_player.playing:
+			return
+		_bgm_fading_out = false
+		_tween_bgm_volume(_get_bgm_target_volume())
+		return
+
+	if _bgm_fading_out:
+		_bgm_fading_out = false
+		_tween_bgm_volume(_get_bgm_target_volume())
+
+
+func _fade_out_chase_bgm() -> void:
+	if not bgm_player.playing or _bgm_fading_out:
+		return
+	_bgm_fading_out = true
+	_cancel_bgm_fade()
+	_bgm_fade_tween = create_tween()
+	_bgm_fade_tween.tween_property(
+		bgm_player, "volume_db", -80.0, chase_bgm_fade_duration
+	)
+	_bgm_fade_tween.tween_callback(_stop_bgm_after_fade_out)
+
+
+func _tween_bgm_volume(target_volume_db: float) -> void:
+	_cancel_bgm_fade()
+	_bgm_fade_tween = create_tween()
+	_bgm_fade_tween.tween_property(
+		bgm_player, "volume_db", target_volume_db, chase_bgm_fade_duration
+	)
+
+
+func _cancel_bgm_fade() -> void:
+	if _bgm_fade_tween != null and _bgm_fade_tween.is_valid():
+		_bgm_fade_tween.kill()
+	_bgm_fade_tween = null
+
+
+func _stop_bgm_after_fade_out() -> void:
+	_bgm_fading_out = false
+	_bgm_fade_tween = null
+	if not _should_play_chase_bgm():
 		bgm_player.stop()
+
+
+func _get_bgm_target_volume() -> float:
+	return (
+		announcement_bgm_volume_db
+		if announcement_1_player.playing or announcement_2_player.playing
+		else bgm_volume_db
+	)
 
 
 func _should_play_chase_bgm() -> bool:

@@ -1,15 +1,9 @@
-[gd_resource type="AudioBusLayout" load_steps=2 format=3]
+[gd_resource type="AudioBusLayout" format=3 uid="uid://bkt1apir4cuoc"]
 
 [sub_resource type="AudioEffectPitchShift" id="AudioEffectPitchShift_breaker"]
 pitch_scale = 0.15
 
 [resource]
-bus/0/name = &"Master"
-bus/0/solo = false
-bus/0/mute = false
-bus/0/bypass_fx = false
-bus/0/volume_db = 0.0
-bus/0/send = &""
 bus/1/name = &"BreakerSfx"
 bus/1/solo = false
 bus/1/mute = false
